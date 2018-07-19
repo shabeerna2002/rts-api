@@ -1,6 +1,6 @@
 ﻿Imports System.Data
 Imports MySql.Data.MySqlClient
-Imports Microsoft.Extensions.Configuration
+
 
 
 Namespace JobStation
@@ -18,7 +18,7 @@ Namespace JobStation
                 If ConnectionString.Trim.Length = 0 Then
 
 
-                    'ConString = "Server=localhost;Database=jobstation;Uid=root;Pwd=shabeer;"
+                    ConString = "Server=localhost;Database=rts;Uid=root;Pwd=shabeer;SslMode=none;"
                 Else
                     ConString = ConnectionString
                 End If
@@ -207,7 +207,8 @@ Namespace JobStation
             End Try
         End Function
 
-        Function ExecuteNonQuery(ByVal DBCommandType As CommandType, ByVal CommandText As String, ByVal isConnectionOpen As Boolean, Optional ByRef DbConnection As MySqlConnection = Nothing, Optional ByVal ConnectionString As String = "") As Integer
+
+        Async Function ExecuteNonQuery(ByVal DBCommandType As CommandType, ByVal CommandText As String, ByVal isConnectionOpen As Boolean, Optional ByRef DbConnection As MySqlConnection = Nothing, Optional ByVal ConnectionString As String = "") As Task(Of Integer)
             Dim SqlCon As New MySqlConnection
             Dim cmd As New MySqlCommand
             Try
@@ -220,7 +221,8 @@ Namespace JobStation
                 cmd.CommandType = DBCommandType
                 cmd.Connection = SqlCon
 
-                Dim result As Integer = cmd.ExecuteNonQuery
+                ' Dim result As Integer = cmd.ExecuteNonQuery
+                Await cmd.ExecuteNonQueryAsync()
                 Return result
             Catch ex As Exception
                 Return 0
@@ -425,6 +427,8 @@ Namespace JobStation
 
             End Try
         End Function
+
+
 
         Function GetDataSet(ByVal DBCommandType As CommandType, ByVal CommandText As String, ByVal isConnectionOpen As Boolean, Optional ByRef DbConnection As MySqlConnection = Nothing, Optional ByVal ConnectionString As String = "") As DataSet
             Dim SqlCon As New MySqlConnection
@@ -633,13 +637,31 @@ Namespace JobStation
 
         End Function
 
+        Private Sub FuntionName(ByVal Data As List(Of Object))
+            Dim dt As New DataTable
+            Dim CarList As New List(Of Car)
+            For Each dr In dt.Rows
+                Dim nCar As New Car
+                nCar.CarName = dr("CarName").ToString
+                nCar.Model = dr("Model").ToString
+                CarList.Add(nCar)
+            Next
+            dt.Dispose()
 
+        End Sub
 
     End Module
 
 
 
+    Public Class Car
+        Public CarName As String
+        Public Model As String
+        Dim Brand As String
 
+
+
+    End Class
 
 
 End Namespace

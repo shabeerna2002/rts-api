@@ -1,8 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>JobStation</RootNamespace>
+    <RootNamespace>RTS</RootNamespace>
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySql.Data" Version="8.0.11" />
+    <PackageReference Include="System.Data.Common" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DbCommands\DbCommands.vbproj" />
+    <ProjectReference Include="..\models\models.vbproj" />
+  </ItemGroup>
 
 </Project>

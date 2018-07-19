@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <RootNamespace>JobStation</RootNamespace>
+    <RootNamespace>RTS</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,9 +11,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\controllers\controllers.vbproj" />
     <ProjectReference Include="..\DbCommands\DbCommands.vbproj" />
   </ItemGroup>
 
