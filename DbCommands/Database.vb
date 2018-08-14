@@ -1,7 +1,13 @@
 ﻿Imports System.Data
+
 Imports MySql.Data.MySqlClient
+Imports StackExchange.Redis
 
-
+Imports System.Net.Mail
+Imports System.Threading
+Imports System.Text
+Imports System.Security.Cryptography
+Imports System.IO
 
 Namespace JobStation
     ''' <summary>
@@ -10,6 +16,71 @@ Namespace JobStation
     ''' You may also open connection manually. Important : All the manually OPENED connection should be manually CLOSED after the operation
     ''' </summary>
     Public Module DatabaseCommands
+        Public Function AuthenticateUser(UserID As String, UserKey As String, APIKey As String, ConsumerKey As String, Token As String) As String
+            Return "VALID-" & Guid.NewGuid.ToString
+        End Function
+
+        Public Function GetNewTokenTable(NewToken As String) As DataTable
+            Dim dt As DataTable = New DataTable()
+            dt.Columns.Add("token")
+            Dim dr As DataRow
+            dr = dt.NewRow()
+            dr("token") = NewToken.Replace("VALID-", "")
+            dt.Rows.Add(dr)
+            dt.TableName = "token"
+            Return dt
+        End Function
+
+        Public Async Function SendSMS(ToNumber As String, Message As String) As Task(Of Boolean)
+            Dim URL As String = "https://api.smsglobal.com/http-api.php?action=sendsms&user=dlwhuq3f&password=Kxn8u3Vs&&from=SHUROOQ&to=" & ToNumber & "&text=" & Message
+            Dim client As Net.Http.HttpClient = New Net.Http.HttpClient()
+            Dim getStringTask As Task(Of String) = client.GetStringAsync(URL)
+
+            Dim urlContents As String = Await getStringTask
+            Return True
+        End Function
+
+        Public Sub SendEmailAsyc(EmailTo As String, EmailSubject As String, EmailBody As String, DisplayName As String, FromEmail As String)
+            Dim email As New Thread(Sub() SendEmail(EmailTo, EmailSubject, EmailBody, DisplayName, FromEmail))
+            email.IsBackground = True
+            email.Start()
+        End Sub
+
+
+
+        Private Function SendEmail(EmailTo As String, EmailSubject As String, EmailBody As String, DisplayName As String, FromEmail As String) As String
+            Try
+                Dim Smtp_Server As New SmtpClient
+                Dim e_mail As New MailMessage()
+                Smtp_Server.UseDefaultCredentials = False
+
+                Dim username As String = ""
+                Dim password As String = ""
+                Dim smtpPort As String = ""
+                Dim smtpServerHost As String = ""
+                Dim smtpEnableSSL As Boolean = False
+
+
+
+                Smtp_Server.Credentials = New Net.NetworkCredential(username, password)
+                Smtp_Server.Port = smtpPort
+                Smtp_Server.EnableSsl = smtpEnableSSL
+                Smtp_Server.Host = smtpServerHost
+
+                e_mail = New MailMessage()
+                e_mail.From = New MailAddress(FromEmail, DisplayName)
+                e_mail.To.Add(EmailTo)
+                e_mail.Subject = EmailSubject
+                e_mail.IsBodyHtml = True
+                e_mail.Body = EmailBody
+                Smtp_Server.Send(e_mail)
+                Return "200"
+            Catch ex As Exception
+                Return "503"
+            End Try
+        End Function
+
+
 
 
         Public Function OpenConnection(Optional ByVal ConnectionString As String = "") As MySqlConnection
@@ -208,7 +279,7 @@ Namespace JobStation
         End Function
 
 
-        Async Function ExecuteNonQuery(ByVal DBCommandType As CommandType, ByVal CommandText As String, ByVal isConnectionOpen As Boolean, Optional ByRef DbConnection As MySqlConnection = Nothing, Optional ByVal ConnectionString As String = "") As Task(Of Integer)
+        Function ExecuteNonQuery(ByVal DBCommandType As CommandType, ByVal CommandText As String, ByVal isConnectionOpen As Boolean, Optional ByRef DbConnection As MySqlConnection = Nothing, Optional ByVal ConnectionString As String = "") As Integer
             Dim SqlCon As New MySqlConnection
             Dim cmd As New MySqlCommand
             Try
@@ -221,8 +292,8 @@ Namespace JobStation
                 cmd.CommandType = DBCommandType
                 cmd.Connection = SqlCon
 
-                ' Dim result As Integer = cmd.ExecuteNonQuery
-                Await cmd.ExecuteNonQueryAsync()
+                Dim result As Integer = cmd.ExecuteNonQuery
+
                 Return result
             Catch ex As Exception
                 Return 0
@@ -637,6 +708,32 @@ Namespace JobStation
 
         End Function
 
+
+        Sub AddValuesToRedis(DatabseID As Integer, Key As String, Value As String)
+            Dim redis As ConnectionMultiplexer = ConnectionMultiplexer.Connect("localhost,password=shabeer")
+            Dim db As IDatabase = redis.GetDatabase(DatabseID)
+
+            db.StringSetAsync(Key, Value)
+            redis.CloseAsync()
+        End Sub
+
+        Function GetValuesToRedis(DatabseID As Integer, Key As String) As String
+            Dim redis As ConnectionMultiplexer = ConnectionMultiplexer.Connect("localhost,password=shabeer")
+            Dim db As IDatabase = redis.GetDatabase(DatabseID)
+
+            Dim Result As String = db.StringGet(Key).ToString
+            redis.CloseAsync()
+            Return Result
+
+        End Function
+
+        Sub DeleteKeyFromRedis(DatabseID As Integer, Key As String)
+            Dim redis As ConnectionMultiplexer = ConnectionMultiplexer.Connect("localhost,password=shabeer")
+            Dim db As IDatabase = redis.GetDatabase(DatabseID)
+            db.KeyDeleteAsync(Key)
+            redis.CloseAsync()
+        End Sub
+
         Private Sub FuntionName(ByVal Data As List(Of Object))
             Dim dt As New DataTable
             Dim CarList As New List(Of Car)
@@ -650,7 +747,112 @@ Namespace JobStation
 
         End Sub
 
+        Public Function Encrypt(ByVal plainText As String) As String
+
+            Dim passPhrase As String = "Shu@rock@Mac/Hamid832Shab45"
+            Dim saltValue As String = "App1eM2n78R1n45d"
+            Dim hashAlgorithm As String = "SHA256"
+
+            Dim passwordIterations As Integer = 2
+            Dim initVector As String = "@1B2c3D4e5F6g7H8"
+            Dim keySize As Integer = 256
+
+            Dim initVectorBytes As Byte() = Encoding.ASCII.GetBytes(initVector)
+            Dim saltValueBytes As Byte() = Encoding.ASCII.GetBytes(saltValue)
+
+            Dim plainTextBytes As Byte() = Encoding.UTF8.GetBytes(plainText)
+
+
+            Dim password As New PasswordDeriveBytes(passPhrase, saltValueBytes, hashAlgorithm, passwordIterations)
+
+            Dim keyBytes As Byte() = password.GetBytes(keySize \ 8)
+            Dim symmetricKey As New RijndaelManaged()
+
+            symmetricKey.Mode = CipherMode.CBC
+
+            Dim encryptor As ICryptoTransform = symmetricKey.CreateEncryptor(keyBytes, initVectorBytes)
+
+            Dim memoryStream As New MemoryStream()
+            Dim cryptoStream As New CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write)
+
+            cryptoStream.Write(plainTextBytes, 0, plainTextBytes.Length)
+            cryptoStream.FlushFinalBlock()
+            Dim cipherTextBytes As Byte() = memoryStream.ToArray()
+            memoryStream.Close()
+            cryptoStream.Close()
+            Dim cipherText As String = Convert.ToBase64String(cipherTextBytes)
+            Return cipherText
+        End Function
+        Public Function Decrypt(ByVal cipherText As String) As String
+            Dim passPhrase As String = "Shu@rock@Mac/Hamid832Shab45"
+            Dim saltValue As String = "App1eM2n78R1n45d"
+            Dim hashAlgorithm As String = "SHA256"
+
+            Dim passwordIterations As Integer = 2
+            Dim initVector As String = "@1B2c3D4e5F6g7H8"
+            Dim keySize As Integer = 256
+            ' Convert strings defining encryption key characteristics into byte
+            ' arrays. Let us assume that strings only contain ASCII codes.
+            ' If strings include Unicode characters, use Unicode, UTF7, or UTF8
+            ' encoding.
+            Dim initVectorBytes As Byte() = Encoding.ASCII.GetBytes(initVector)
+            Dim saltValueBytes As Byte() = Encoding.ASCII.GetBytes(saltValue)
+
+            ' Convert our ciphertext into a byte array.
+            Dim cipherTextBytes As Byte() = Convert.FromBase64String(cipherText)
+
+            ' First, we must create a password, from which the key will be 
+            ' derived. This password will be generated from the specified 
+            ' passphrase and salt value. The password will be created using
+            ' the specified hash algorithm. Password creation can be done in
+            ' several iterations.
+            Dim password As New PasswordDeriveBytes(passPhrase, saltValueBytes, hashAlgorithm, passwordIterations)
+
+            ' Use the password to generate pseudo-random bytes for the encryption
+            ' key. Specify the size of the key in bytes (instead of bits).
+            Dim keyBytes As Byte() = password.GetBytes(keySize \ 8)
+
+            ' Create uninitialized Rijndael encryption object.
+            Dim symmetricKey As New RijndaelManaged()
+
+            ' It is reasonable to set encryption mode to Cipher Block Chaining
+            ' (CBC). Use default options for other symmetric key parameters.
+            symmetricKey.Mode = CipherMode.CBC
+
+            ' Generate decryptor from the existing key bytes and initialization 
+            ' vector. Key size will be defined based on the number of the key 
+            ' bytes.
+            Dim decryptor As ICryptoTransform = symmetricKey.CreateDecryptor(keyBytes, initVectorBytes)
+
+            ' Define memory stream which will be used to hold encrypted data.
+            Dim memoryStream As New MemoryStream(cipherTextBytes)
+
+            ' Define cryptographic stream (always use Read mode for encryption).
+            Dim cryptoStream As New CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read)
+
+            ' Since at this point we don't know what the size of decrypted data
+            ' will be, allocate the buffer long enough to hold ciphertext;
+            ' plaintext is never longer than ciphertext.
+            Dim plainTextBytes As Byte() = New Byte(cipherTextBytes.Length - 1) {}
+
+            ' Start decrypting.
+            Dim decryptedByteCount As Integer = cryptoStream.Read(plainTextBytes, 0, plainTextBytes.Length)
+
+            ' Close both streams.
+            memoryStream.Close()
+            cryptoStream.Close()
+
+            ' Convert decrypted data into a string. 
+            ' Let us assume that the original plaintext string was UTF8-encoded.
+            Dim plainText As String = Encoding.UTF8.GetString(plainTextBytes, 0, decryptedByteCount)
+
+            ' Return decrypted string.   
+            Return plainText
+        End Function
+
     End Module
+
+
 
 
 

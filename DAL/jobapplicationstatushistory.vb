@@ -32,6 +32,8 @@ cmd.Parameters.Add("?p_CurrentStateID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_CurrentStateName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayCurrentState",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayAliasCurrentState",MySqlDbType.varchar)
+cmd.Parameters.Add("?p_isPartialUpdate",MySqlDbType.bit)
+cmd.Parameters.Add("?p_PartialUpdateDisplayName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_NextStateID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_NextStateName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayNextState",MySqlDbType.varchar)
@@ -77,6 +79,8 @@ cmd.Parameters.Item("?p_CurrentStateID").Value = c.CurrentStateID
 cmd.Parameters.Item("?p_CurrentStateName").Value = c.CurrentStateName
 cmd.Parameters.Item("?p_DisplayCurrentState").Value = c.DisplayCurrentState
 cmd.Parameters.Item("?p_DisplayAliasCurrentState").Value = c.DisplayAliasCurrentState
+cmd.Parameters.Item("?p_isPartialUpdate").Value = c.isPartialUpdate
+cmd.Parameters.Item("?p_PartialUpdateDisplayName").Value = c.PartialUpdateDisplayName
 cmd.Parameters.Item("?p_NextStateID").Value = c.NextStateID
 cmd.Parameters.Item("?p_NextStateName").Value = c.NextStateName
 cmd.Parameters.Item("?p_DisplayNextState").Value = c.DisplayNextState
@@ -172,6 +176,8 @@ cmd.Parameters.Add("?p_CurrentStateID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_CurrentStateName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayCurrentState",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayAliasCurrentState",MySqlDbType.varchar)
+cmd.Parameters.Add("?p_isPartialUpdate",MySqlDbType.bit)
+cmd.Parameters.Add("?p_PartialUpdateDisplayName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_NextStateID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_NextStateName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayNextState",MySqlDbType.varchar)
@@ -217,6 +223,8 @@ cmd.Parameters.Item("?p_CurrentStateID").Value = c.CurrentStateID
 cmd.Parameters.Item("?p_CurrentStateName").Value = c.CurrentStateName
 cmd.Parameters.Item("?p_DisplayCurrentState").Value = c.DisplayCurrentState
 cmd.Parameters.Item("?p_DisplayAliasCurrentState").Value = c.DisplayAliasCurrentState
+cmd.Parameters.Item("?p_isPartialUpdate").Value = c.isPartialUpdate
+cmd.Parameters.Item("?p_PartialUpdateDisplayName").Value = c.PartialUpdateDisplayName
 cmd.Parameters.Item("?p_NextStateID").Value = c.NextStateID
 cmd.Parameters.Item("?p_NextStateName").Value = c.NextStateName
 cmd.Parameters.Item("?p_DisplayNextState").Value = c.DisplayNextState

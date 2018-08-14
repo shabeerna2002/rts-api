@@ -21,6 +21,7 @@ cmd.Parameters.Add("?p_ProcessID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_StateName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayAlias",MySqlDbType.varchar)
+cmd.Parameters.Add("?p_ParialUpdateDisplayName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_Description",MySqlDbType.text)
 cmd.Parameters.Add("?p_isInActive",MySqlDbType.bit)
 cmd.Parameters.Add("?p_SessionID",MySqlDbType.Int64)
@@ -35,6 +36,7 @@ cmd.Parameters.Item("?p_ProcessID").Value = c.ProcessID
 cmd.Parameters.Item("?p_StateName").Value = c.StateName
 cmd.Parameters.Item("?p_DisplayName").Value = c.DisplayName
 cmd.Parameters.Item("?p_DisplayAlias").Value = c.DisplayAlias
+cmd.Parameters.Item("?p_ParialUpdateDisplayName").Value = c.ParialUpdateDisplayName
 cmd.Parameters.Item("?p_Description").Value = c.Description
 cmd.Parameters.Item("?p_isInActive").Value = c.isInActive
 cmd.Parameters.Item("?p_SessionID").Value = c.SessionID
@@ -99,6 +101,7 @@ cmd.Parameters.Add("?p_ProcessID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_StateName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_DisplayAlias",MySqlDbType.varchar)
+cmd.Parameters.Add("?p_ParialUpdateDisplayName",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_Description",MySqlDbType.text)
 cmd.Parameters.Add("?p_isInActive",MySqlDbType.bit)
 cmd.Parameters.Add("?p_SessionID",MySqlDbType.Int64)
@@ -113,6 +116,7 @@ cmd.Parameters.Item("?p_ProcessID").Value = c.ProcessID
 cmd.Parameters.Item("?p_StateName").Value = c.StateName
 cmd.Parameters.Item("?p_DisplayName").Value = c.DisplayName
 cmd.Parameters.Item("?p_DisplayAlias").Value = c.DisplayAlias
+cmd.Parameters.Item("?p_ParialUpdateDisplayName").Value = c.ParialUpdateDisplayName
 cmd.Parameters.Item("?p_Description").Value = c.Description
 cmd.Parameters.Item("?p_isInActive").Value = c.isInActive
 cmd.Parameters.Item("?p_SessionID").Value = c.SessionID

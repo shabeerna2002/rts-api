@@ -19,8 +19,6 @@ cmd.Parameters.Add("?p_CandidateLanguageID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_CandidateID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_LanguageID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_proficiency",MySqlDbType.Int64)
-cmd.Parameters.Add("?p_CompletionYear",MySqlDbType.datetime)
-cmd.Parameters.Add("?p_ExamResult",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_isInActive",MySqlDbType.bit)
 cmd.Parameters.Add("?p_SessionID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_TransactionKey",MySqlDbType.varchar)
@@ -32,8 +30,6 @@ cmd.Parameters.Item("?p_CandidateLanguageID").Value = c.CandidateLanguageID
 cmd.Parameters.Item("?p_CandidateID").Value = c.CandidateID
 cmd.Parameters.Item("?p_LanguageID").Value = c.LanguageID
 cmd.Parameters.Item("?p_proficiency").Value = c.proficiency
-cmd.Parameters.Item("?p_CompletionYear").Value = c.CompletionYear
-cmd.Parameters.Item("?p_ExamResult").Value = c.ExamResult
 cmd.Parameters.Item("?p_isInActive").Value = c.isInActive
 cmd.Parameters.Item("?p_SessionID").Value = c.SessionID
 cmd.Parameters.Item("?p_TransactionKey").Value = c.TransactionKey
@@ -95,8 +91,6 @@ cmd.Parameters.Add("?p_CandidateLanguageID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_CandidateID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_LanguageID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_proficiency",MySqlDbType.Int64)
-cmd.Parameters.Add("?p_CompletionYear",MySqlDbType.datetime)
-cmd.Parameters.Add("?p_ExamResult",MySqlDbType.varchar)
 cmd.Parameters.Add("?p_isInActive",MySqlDbType.bit)
 cmd.Parameters.Add("?p_SessionID",MySqlDbType.Int64)
 cmd.Parameters.Add("?p_TransactionKey",MySqlDbType.varchar)
@@ -108,8 +102,6 @@ cmd.Parameters.Item("?p_CandidateLanguageID").Value = c.CandidateLanguageID
 cmd.Parameters.Item("?p_CandidateID").Value = c.CandidateID
 cmd.Parameters.Item("?p_LanguageID").Value = c.LanguageID
 cmd.Parameters.Item("?p_proficiency").Value = c.proficiency
-cmd.Parameters.Item("?p_CompletionYear").Value = c.CompletionYear
-cmd.Parameters.Item("?p_ExamResult").Value = c.ExamResult
 cmd.Parameters.Item("?p_isInActive").Value = c.isInActive
 cmd.Parameters.Item("?p_SessionID").Value = c.SessionID
 cmd.Parameters.Item("?p_TransactionKey").Value = c.TransactionKey

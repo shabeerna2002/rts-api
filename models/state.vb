@@ -7,6 +7,7 @@ Dim _ProcessID as Integer = 0
 Dim _StateName as String = String.Empty
 Dim _DisplayName as String = String.Empty
 Dim _DisplayAlias as String = String.Empty
+Dim _ParialUpdateDisplayName as String = String.Empty
 Dim _Description as String = String.Empty
 Dim _isInActive as BOOLEAN = False
 Dim _SessionID as Integer = 0
@@ -68,6 +69,15 @@ Return _DisplayAlias
 End Get
 Set(ByVal value As String)
 _DisplayAlias = value
+End Set
+End Property
+
+Public Property ParialUpdateDisplayName() As String
+Get
+Return _ParialUpdateDisplayName
+End Get
+Set(ByVal value As String)
+_ParialUpdateDisplayName = value
 End Set
 End Property
 

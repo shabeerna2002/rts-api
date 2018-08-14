@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\" />
+    <Folder Include="uploads\" />
+    <Folder Include="wwwroot\cvs\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,4 +21,9 @@
     <ProjectReference Include="..\DbCommands\DbCommands.vbproj" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <DotNetCliToolReference Include="Amazon.ElasticBeanstalk.Tools" Version="1.1.4" />
+  </ItemGroup>
 </Project>
+

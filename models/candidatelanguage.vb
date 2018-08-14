@@ -5,8 +5,6 @@ Dim _CandidateLanguageID as Integer = 0
 Dim _CandidateID as Integer = 0
 Dim _LanguageID as Integer = 0
 Dim _proficiency as Integer = 0
-Dim _CompletionYear as DateTime = "01-01-1900 12:00:00 AM"
-Dim _ExamResult as String = String.Empty
 Dim _isInActive as BOOLEAN = False
 Dim _SessionID as Integer = 0
 Dim _TransactionKey as String = String.Empty
@@ -49,24 +47,6 @@ Return _proficiency
 End Get
 Set(ByVal value As Integer)
 _proficiency = value
-End Set
-End Property
-
-Public Property CompletionYear() As DateTime
-Get
-Return _CompletionYear
-End Get
-Set(ByVal value As DateTime)
-_CompletionYear = value
-End Set
-End Property
-
-Public Property ExamResult() As String
-Get
-Return _ExamResult
-End Get
-Set(ByVal value As String)
-_ExamResult = value
 End Set
 End Property
 

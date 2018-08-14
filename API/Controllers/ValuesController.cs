@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -18,24 +20,47 @@ namespace API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class ValuesController : ControllerBase
-
+       
     {
 
+        string NewToken = "";
 
-        
         IConfiguration configuration;
         public ValuesController(IConfiguration iconfiguration)
         {
             this.configuration = iconfiguration;
         }
+
+
+        private bool AuthenticateUser()
+        {
+            string UserID = Request.Headers["userid"];
+            string ApiKey = Request.Headers["apikey"];
+            string UserKey = Request.Headers["userkey"];
+            string ConsumerKey = Request.Headers["consumerkey"];
+            string Token = Request.Headers["token"];
+            NewToken = RTS.JobStation.DatabaseCommands.AuthenticateUser(UserID, UserKey, ApiKey, ConsumerKey, Token);
+            if ((NewToken.ToLower().IndexOf("valid") >= 0))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+
         // GET api/values
         [HttpGet]
         //  public ActionResult<IEnumerable<RTS.JobStation.Models.Religion>> Get()
         public ActionResult<string> Get()
         {
-
-
-
+            if (AuthenticateUser()==false)
+            {
+                return Unauthorized();
+            }
+            
 
             string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
             RTS.JobStation.Controller.Candidate candidate = new RTS.JobStation.Controller.Candidate();
@@ -135,9 +160,6 @@ namespace API.Controllers
 
 
 
-            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost,password=shabeer");
-
-            IDatabase db = redis.GetDatabase(2);
 
             //if (db.StringSet("shabeeraug2018", "testValue123"))
             // {
@@ -146,9 +168,9 @@ namespace API.Controllers
             //  Console.WriteLine(val);
             //   }
 
-            db.KeyDelete("shabeeraug2018");
-            db.StringSet("shabeeraug2018", "testValue123");
-            db.StringSet("shabeeraug2018", "testValue12345");
+            //db.KeyDelete("shabeeraug2018");
+            //db.StringSet("shabeeraug2018", "testValue123");
+            //db.StringSet("shabeeraug2018", "testValue12345");
 
             return json2;
 
@@ -166,21 +188,57 @@ namespace API.Controllers
         [HttpGet("{id}")]
         public ActionResult<string> Get(int id)
         {
-            return "value";
+
+            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost,password=shabeer");
+
+            IDatabase db = redis.GetDatabase(2);
+            return db.StringGet("shabeeraug2018").ToString();
+        }
+
+        // GET api/values/5
+        [HttpGet("encrypt")]
+        public ActionResult<string> Encrypt([FromQuery]string text)
+        {
+             return RTS.JobStation.DatabaseCommands.Encrypt(text);
+        }
+
+        // GET api/values/5
+        [HttpGet("decrypt")]
+        public ActionResult<string> Decrypt([FromQuery]string text)
+        {
+            return RTS.JobStation.DatabaseCommands.Decrypt(text);
         }
 
         // POST api/values
         [HttpPost]
-        public IActionResult Post([FromBody] Cars value, [FromHeader] string token)
+        // public IActionResult Post([FromBody] Cars value, [FromHeader] string token)
+
+        [HttpPost]
+        public IActionResult Post(ICollection<IFormFile> files)
         {
-            variation v;
-            v = value.Colors[0];
-            string abc = v.color;
+
+            //foreach (var formFile in files)
+            //{
+            //    var fileName = formFile.FileName;
+
+            //    if (formFile.Length > 0)
+            //    {
+            //        using (var stream = new FileStream("uploads/" + fileName, FileMode.Create))
+            //        {
+            //            formFile.CopyToAsync(stream);
+            //        }
+            //    }
+            //}
+
           
 
-            return  Ok("250-" + token);
+            return  Ok("250-" );
            
         }
+
+
+      
+
 
         // PUT api/values/5
         [HttpPut("{id}")]

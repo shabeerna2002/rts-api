@@ -18,6 +18,8 @@ Dim _CurrentStateID as Integer = 0
 Dim _CurrentStateName as String = String.Empty
 Dim _DisplayCurrentState as String = String.Empty
 Dim _DisplayAliasCurrentState as String = String.Empty
+Dim _isPartialUpdate as BOOLEAN = False
+Dim _PartialUpdateDisplayName as String = String.Empty
 Dim _NextStateID as Integer = 0
 Dim _NextStateName as String = String.Empty
 Dim _DisplayNextState as String = String.Empty
@@ -198,6 +200,24 @@ Return _DisplayAliasCurrentState
 End Get
 Set(ByVal value As String)
 _DisplayAliasCurrentState = value
+End Set
+End Property
+
+Public Property isPartialUpdate() As BOOLEAN
+Get
+Return _isPartialUpdate
+End Get
+Set(ByVal value As BOOLEAN)
+_isPartialUpdate = value
+End Set
+End Property
+
+Public Property PartialUpdateDisplayName() As String
+Get
+Return _PartialUpdateDisplayName
+End Get
+Set(ByVal value As String)
+_PartialUpdateDisplayName = value
 End Set
 End Property
 
