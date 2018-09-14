@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -14,9 +15,18 @@ using Newtonsoft.Json;
 
 namespace RTS.Controllers
 {
+
+  
     [Route("api/[controller]")]
-    public class CandidateController : ControllerBase
+    public class CandidateController : Controller
     {
+
+        public HttpResponseMessage Options()
+        {
+            return new HttpResponseMessage { StatusCode = System.Net.HttpStatusCode.OK };
+        }
+
+
         string NewToken = "";
         IConfiguration configuration;
         public CandidateController(IConfiguration iconfiguration)
@@ -31,6 +41,14 @@ namespace RTS.Controllers
             string ConsumerKey = Request.Headers["consumerkey"];
             string Token = Request.Headers["token"];
             NewToken = RTS.JobStation.DatabaseCommands.AuthenticateUser(UserID, UserKey, ApiKey, ConsumerKey, Token);
+
+            //if (UserKey != "apple" && ApiKey != "mango" && ConsumerKey != "good" && Token != "123")
+            //{
+            //    return false;
+            //}
+
+
+
             if ((NewToken.ToLower().IndexOf("valid") >= 0))
             {
                 return true;
@@ -42,7 +60,7 @@ namespace RTS.Controllers
 
         }
 
-     
+
 
 
         // GET: api/<controller>
@@ -55,37 +73,37 @@ namespace RTS.Controllers
             }
 
 
-          
+
             string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
             RTS.JobStation.Controller.Candidate Candidate = new RTS.JobStation.Controller.Candidate();
 
 
-            DataSet  ds = new DataSet("CandidateList");
+            DataSet ds = new DataSet("CandidateList");
             MySql.Data.MySqlClient.MySqlConnection con = RTS.JobStation.DatabaseCommands.OpenConnection();
             MySql.Data.MySqlClient.MySqlTransaction MyTran;
             MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
 
             //Get Candidate Basic Info  GetCandidateBasicInfo
-            RTS.JobStation.Models.CandidateRequestInfo RequestInfo = new RTS.JobStation.Models.CandidateRequestInfo ();
+            RTS.JobStation.Models.CandidateRequestInfo RequestInfo = new RTS.JobStation.Models.CandidateRequestInfo();
             RequestInfo.UserID = 4;
             RequestInfo.PageID = 1;
             RequestInfo.Count = 50;
             RequestInfo.FilterType = "none";
-          
+
 
             // RequestInfo.NationalityIDList = "3";
             // RequestInfo.LanguageSkillsList = "2";
             RequestInfo.Keywords = "good";
-  
 
-            ds = Candidate.GetCandidateList(ref con, ref MyTran,RequestInfo  );
+
+            ds = Candidate.GetCandidateList(ref con, ref MyTran, RequestInfo);
             ds.Tables.Add(RTS.JobStation.DatabaseCommands.GetNewTokenTable(NewToken));
-           // dt = Candidate.GetCandidateList(ref con, ref MyTran,4,1,50).Tables[0];req
+            // dt = Candidate.GetCandidateList(ref con, ref MyTran,4,1,50).Tables[0];req
             string jsonResult = JsonConvert.SerializeObject(ds);
             RTS.JobStation.DatabaseCommands.CloseTransaction(ref MyTran);
             RTS.JobStation.DatabaseCommands.CloseConnection(ref con);
 
-            return  Ok(jsonResult);
+            return Ok(jsonResult);
         }
 
 
@@ -103,8 +121,8 @@ namespace RTS.Controllers
             RTS.JobStation.Controller.Candidate Candidate = new RTS.JobStation.Controller.Candidate();
             // DataSet ds = new DataSet("CandidateTimeline");
             DataSet ds = new DataSet();
-            MySql.Data.MySqlClient.MySqlConnection con =null ;
-            MySql.Data.MySqlClient.MySqlTransaction MyTran=  null;
+            MySql.Data.MySqlClient.MySqlConnection con = null;
+            MySql.Data.MySqlClient.MySqlTransaction MyTran = null;
             try
             {
                 con = RTS.JobStation.DatabaseCommands.OpenConnection();
@@ -121,23 +139,23 @@ namespace RTS.Controllers
                         //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
                         jsonResult = JsonConvert.SerializeObject(doc);
                     }
-                    else { return NoContent(); }                 
+                    else { return NoContent(); }
                 }
-               else { return NoContent(); }
+                else { return NoContent(); }
 
 
                 // jsonResult = JsonConvert.SerializeObject(ds);
             }
             catch (System.IO.IOException e)
             {
-              
+
             }
 
             finally
             {
                 RTS.JobStation.DatabaseCommands.CloseTransaction(ref MyTran);
                 RTS.JobStation.DatabaseCommands.CloseConnection(ref con);
-                
+
             }
 
 
@@ -147,7 +165,7 @@ namespace RTS.Controllers
 
         }
 
-       
+
 
 
 
@@ -181,6 +199,18 @@ namespace RTS.Controllers
                         string xml = ds.GetXml();
                         XmlDocument doc = new XmlDocument();
                         doc.LoadXml(xml);
+
+                        var xTag = doc.GetElementsByTagName("ActivityLog");
+
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
                         //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
                         jsonResult = JsonConvert.SerializeObject(doc);
                     }
@@ -193,6 +223,7 @@ namespace RTS.Controllers
             }
             catch (System.IO.IOException e)
             {
+                return StatusCode(501, "Error : " + e.Message.ToString());
 
             }
 
@@ -399,6 +430,14 @@ namespace RTS.Controllers
                 con = RTS.JobStation.DatabaseCommands.OpenConnection();
                 MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
                 ds = Candidate.GetCandidateDocuments(ref con, ref MyTran, CandidateID);
+                if (ds.Tables["Documents"].Rows.Count > 0)
+                {
+                    DataRelation parentChildRelation = new DataRelation("ParentChild", ds.Tables["DocumentType"].Columns["CandidateDocumentTypeID"], ds.Tables["Documents"].Columns["Documents"], true);
+                    parentChildRelation.Nested = true;
+                    ds.Relations.Add(parentChildRelation);
+                }
+
+
 
                 if (ds != null)
                 {
@@ -408,6 +447,14 @@ namespace RTS.Controllers
                         string xml = ds.GetXml();
                         XmlDocument doc = new XmlDocument();
                         doc.LoadXml(xml);
+
+                   
+
+
+                        
+
+
+
                         //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
                         jsonResult = JsonConvert.SerializeObject(doc);
                     }
@@ -453,13 +500,13 @@ namespace RTS.Controllers
 
             if (cAction.ToLower() == "block")
             {
-              return Ok("candidate blocked successfully");
-             
+                return Ok("candidate blocked successfully");
+
             }
             else if (cAction.ToLower() == "unblock")
             {
-                return Ok("candidate unblocked successfully"); 
-               
+                return Ok("candidate unblocked successfully");
+
             }
 
             return Ok(jsonResult);
@@ -470,7 +517,7 @@ namespace RTS.Controllers
 
         private void BanCandidateAsync(string cAction, int CandidateID, int BannedByUserID)
         {
-            Thread ApplicationProcessFlow = new Thread(() => BanCandidateSync(cAction,CandidateID,BannedByUserID));
+            Thread ApplicationProcessFlow = new Thread(() => BanCandidateSync(cAction, CandidateID, BannedByUserID));
             ApplicationProcessFlow.IsBackground = true;
             ApplicationProcessFlow.Start();
 
@@ -500,8 +547,8 @@ namespace RTS.Controllers
                         //return Ok("candidate blocked successfully");
                     }
                     else {
-                       // return StatusCode(301, "Application Error")
-                            };
+                        // return StatusCode(301, "Application Error")
+                    };
 
                 }
                 else if (cAction.ToLower() == "unblock")
@@ -510,7 +557,7 @@ namespace RTS.Controllers
                         //return Ok("candidate unblocked successfully"); 
                     }
                     else {
-                       // return StatusCode(301, "Application Error");
+                        // return StatusCode(301, "Application Error");
                     }
                 }
 
@@ -519,7 +566,7 @@ namespace RTS.Controllers
             }
             catch (System.IO.IOException e)
             {
-               // return StatusCode(501, "Unkown Error. Error:" + e.Message.ToString());
+                // return StatusCode(501, "Unkown Error. Error:" + e.Message.ToString());
             }
 
             finally
@@ -547,15 +594,15 @@ namespace RTS.Controllers
             FavouriteCandidateAsync(cAction, CandidateID, FavouritedByUserID);
             if (cAction.ToLower() == "fav")
             {
-                
-                    return Ok("candidate favourited successfully");
-              
+
+                return Ok("candidate favourited successfully");
+
             }
             else if (cAction.ToLower() == "unfav")
             {
-                
-                    return Ok("candidate unfavourited successfully");
-             
+
+                return Ok("candidate unfavourited successfully");
+
             }
             return Ok(jsonResult);
 
@@ -591,20 +638,20 @@ namespace RTS.Controllers
                 if (cAction.ToLower() == "fav")
                 {
                     if (Candidate.Insert(CandidateModel, ref con, ref MyTran) == "200") {
-                       // return Ok("candidate favourited successfully");
+                        // return Ok("candidate favourited successfully");
                     }
                     else {
-                       // return StatusCode(301, "Application Error");
+                        // return StatusCode(301, "Application Error");
                     };
 
                 }
                 else if (cAction.ToLower() == "unfav")
                 {
                     if (Candidate.Delete(CandidateModel, ref con, ref MyTran) == "200") {
-                      //  return Ok("candidate unfavourited successfully");
+                        //  return Ok("candidate unfavourited successfully");
                     }
                     else {
-                     //   return StatusCode(301, "Application Error");
+                        //   return StatusCode(301, "Application Error");
                     }
                 }
 
@@ -635,7 +682,7 @@ namespace RTS.Controllers
                 return Unauthorized();
             }
 
-            int userID = Int32.Parse( Request.Headers["userid"]);
+            int userID = Int32.Parse(Request.Headers["userid"]);
             string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
             RTS.JobStation.Controller.Candidate Candidate = new RTS.JobStation.Controller.Candidate();
             // DataSet ds = new DataSet("CandidateTimeline");
@@ -654,8 +701,58 @@ namespace RTS.Controllers
                     if (ds.Tables.Count > 0)
                     {
                         string xml = ds.GetXml();
+
+
+
+
                         XmlDocument doc = new XmlDocument();
                         doc.LoadXml(xml);
+
+                        var xTag = doc.GetElementsByTagName("EmploymentProfile");
+
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+                        xTag = doc.GetElementsByTagName("AcademicProfile");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+                        xTag = doc.GetElementsByTagName("PastApplications");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+                        xTag = doc.GetElementsByTagName("ShortlistableJobs");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
                         //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
                         jsonResult = JsonConvert.SerializeObject(doc);
                     }
@@ -668,7 +765,7 @@ namespace RTS.Controllers
             }
             catch (System.IO.IOException e)
             {
-                return StatusCode (501,"Error");
+                return StatusCode(501, "Error");
             }
 
             finally
@@ -682,6 +779,216 @@ namespace RTS.Controllers
             return Ok(jsonResult);
 
         }
+
+        
+        [HttpGet("CandidateAddFormDisplayComponents")]
+        public ActionResult<string> GetCandidateAddFormDropDownContents()
+        {
+            string jsonResult = "";
+            if (AuthenticateUser() == false)
+            {
+                return Unauthorized();
+            }
+
+
+            string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
+            RTS.JobStation.Controller.Candidate candidate = new RTS.JobStation.Controller.Candidate();
+            // DataSet ds = new DataSet("CandidateTimeline");
+            DataSet ds = new DataSet();
+            MySql.Data.MySqlClient.MySqlConnection con = null;
+            MySql.Data.MySqlClient.MySqlTransaction MyTran = null;
+            try
+            {
+                con = RTS.JobStation.DatabaseCommands.OpenConnection();
+                MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
+                ds = candidate.GetCandidateAddFormDropDownContents(ref con, ref MyTran);
+
+                if (ds != null)
+                {
+
+                    if (ds.Tables.Count > 0)
+                    {
+                        //string xml = ds.GetXml();
+                        //XmlDocument doc = new XmlDocument();
+                        //doc.LoadXml(xml);
+                        //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
+                        jsonResult = JsonConvert.SerializeObject(ds);
+                    }
+                    else { return NoContent(); }
+                }
+                else { return NoContent(); }
+
+
+                // jsonResult = JsonConvert.SerializeObject(ds);
+            }
+            catch (System.IO.IOException e)
+            {
+                return StatusCode(501, "Error" + e.Message.ToString());
+            }
+
+            finally
+            {
+                RTS.JobStation.DatabaseCommands.CloseTransaction(ref MyTran);
+                RTS.JobStation.DatabaseCommands.CloseConnection(ref con);
+
+            }
+
+
+            return Ok(jsonResult);
+
+        }
+
+        
+             [HttpGet("candidatesocuments/{candidateID}")]
+        public ActionResult<string> GetCandidateDocumentsActive(int candidateID)
+        {
+            string jsonResult = "";
+            if (AuthenticateUser() == false)
+            {
+                return Unauthorized();
+            }
+
+
+            string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
+            RTS.JobStation.Controller.Candidatedocument Candidatedocument = new RTS.JobStation.Controller.Candidatedocument();
+            // DataSet ds = new DataSet("CandidateTimeline");
+            DataSet ds = new DataSet();
+            MySql.Data.MySqlClient.MySqlConnection con = null;
+            MySql.Data.MySqlClient.MySqlTransaction MyTran = null;
+            try
+            {
+                con = RTS.JobStation.DatabaseCommands.OpenConnection();
+                MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
+                ds = Candidatedocument.GetCandidateDocumentsActive(candidateID, ref con, ref MyTran);
+
+                if (ds != null)
+                {
+
+                    if (ds.Tables.Count > 0)
+                    {
+                       string xml = ds.GetXml();
+                       XmlDocument doc = new XmlDocument();
+                       doc.LoadXml(xml);
+
+                        var xTag = doc.GetElementsByTagName("TypeOfDocument");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+
+
+                        xTag = doc.GetElementsByTagName("Document");
+                        if (xTag.Count >= 1)
+                        {
+                            
+
+                            // var node = xTag.Item(0) as XmlElement;
+                            var xtagCount = xTag.Count;
+                            for (int i = 0; i <= xtagCount-1; i++)
+                            {
+                                var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                                attribute.InnerText = "true";
+                                attribute.Value = "true";
+                                var node = xTag.Item(i) as XmlElement;
+                                node.Attributes.Append(attribute);
+                            }
+                           
+                        }
+
+
+                        //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
+                        jsonResult = JsonConvert.SerializeObject(doc);
+                    }
+                    else { return NoContent(); }
+                }
+                else { return NoContent(); }
+
+
+                // jsonResult = JsonConvert.SerializeObject(ds);
+            }
+            catch (System.IO.IOException e)
+            {
+                return StatusCode(501, "Error" + e.Message.ToString());
+            }
+
+            finally
+            {
+                RTS.JobStation.DatabaseCommands.CloseTransaction(ref MyTran);
+                RTS.JobStation.DatabaseCommands.CloseConnection(ref con);
+
+            }
+
+
+            return Ok(jsonResult);
+
+        }
+
+
+
+        [HttpGet("ActiveVacancies")]
+        public ActionResult<string> GetVacancyListActive()
+        {
+            string jsonResult = "";
+            if (AuthenticateUser() == false)
+            {
+                return Unauthorized();
+            }
+
+
+            string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
+            RTS.JobStation.Controller.Vacancy Vacancy = new RTS.JobStation.Controller.Vacancy();
+            // DataSet ds = new DataSet("CandidateTimeline");
+            DataSet ds = new DataSet();
+            MySql.Data.MySqlClient.MySqlConnection con = null;
+            MySql.Data.MySqlClient.MySqlTransaction MyTran = null;
+            try
+            {
+                con = RTS.JobStation.DatabaseCommands.OpenConnection();
+                MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
+                ds = Vacancy.GetVacancyListActive(ref con, ref MyTran);
+
+                if (ds != null)
+                {
+
+                    if (ds.Tables.Count > 0)
+                    {
+                        //string xml = ds.GetXml();
+                        //XmlDocument doc = new XmlDocument();
+                        //doc.LoadXml(xml);
+                        //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
+                        jsonResult = JsonConvert.SerializeObject(ds);
+                    }
+                    else { return NoContent(); }
+                }
+                else { return NoContent(); }
+
+
+                // jsonResult = JsonConvert.SerializeObject(ds);
+            }
+            catch (System.IO.IOException e)
+            {
+                return StatusCode(501, "Error" + e.Message.ToString());
+            }
+
+            finally
+            {
+                RTS.JobStation.DatabaseCommands.CloseTransaction(ref MyTran);
+                RTS.JobStation.DatabaseCommands.CloseConnection(ref con);
+
+            }
+
+
+            return Ok(jsonResult);
+
+        }
+
+
 
 
         [HttpGet("applicationstatusdetails/{CandidateID}")]
@@ -708,6 +1015,7 @@ namespace RTS.Controllers
                 DataTable dtActiveJobApplications = new DataTable();
                 DataTable dtCurrentApplicationStatusDetails = new DataTable();
                 DataTable dtCurrentApplicationTimeLine = new DataTable();
+                DataTable dtCurrentApplicationTimeLineDocuments = new DataTable();
                 DataTable dtCandidatePastApplicationStatus = new DataTable();
                 dtActiveJobApplications = Candidate.GetActiveJobApplications(ref con, ref MyTran, CandidateID).Tables[0];
 
@@ -717,10 +1025,17 @@ namespace RTS.Controllers
                     if (dtActiveJobApplications.Rows.Count > 0)
                     {
                         CurrentApplicationID = Int32.Parse(dtActiveJobApplications.Rows[0]["ApplicationID"].ToString());
-                       
+
                         dtCurrentApplicationStatusDetails = Candidate.GetCandidateApplicationStatus(ref con, ref MyTran, CurrentApplicationID).Tables[0];
 
-                        dtCurrentApplicationTimeLine = Candidate.GetCandidateTimeLine(ref con, ref MyTran, CurrentApplicationID).Tables[0];
+
+                        DataSet tmpDs = new DataSet();
+                        tmpDs = Candidate.GetCandidateTimeLine(ref con, ref MyTran, CurrentApplicationID);
+
+                        dtCurrentApplicationTimeLine = tmpDs.Tables[0];
+                        dtCurrentApplicationTimeLineDocuments = tmpDs.Tables[1];
+
+
                     }
                 }
 
@@ -732,11 +1047,22 @@ namespace RTS.Controllers
                 dtActiveJobApplications.TableName = "ActiveJobApplications";
                 dtCurrentApplicationStatusDetails.TableName = "CurrentAppliationStatus";
                 dtCurrentApplicationTimeLine.TableName = "Timeline";
+                dtCurrentApplicationTimeLineDocuments.TableName = "TimelineDocuments";
                 dtCandidatePastApplicationStatus.TableName = "PastApplications";
                 ds.Tables.Add(dtActiveJobApplications.Copy());
                 ds.Tables.Add(dtCurrentApplicationStatusDetails.Copy());
                 ds.Tables.Add(dtCurrentApplicationTimeLine.Copy());
+                ds.Tables.Add(dtCurrentApplicationTimeLineDocuments.Copy());
                 ds.Tables.Add(dtCandidatePastApplicationStatus.Copy());
+
+
+                if (ds.Tables["TimelineDocuments"].Rows.Count > 0)
+                {
+                    DataRelation parentChildRelation = new DataRelation("ParentChild", ds.Tables["Timeline"].Columns["TimeLineID"], ds.Tables["TimelineDocuments"].Columns["TimeLineID"], true);
+                    parentChildRelation.Nested = true;
+                    ds.Relations.Add(parentChildRelation);
+                }
+
 
                 dtActiveJobApplications.Dispose();
                 dtCurrentApplicationStatusDetails.Dispose();
@@ -747,31 +1073,97 @@ namespace RTS.Controllers
                 ResultInfo.Columns.Add("ActiveJobApplications", typeof(int));
                 ResultInfo.Columns.Add("CurrentAppliationStatus", typeof(int));
                 ResultInfo.Columns.Add("Timeline", typeof(int));
+                ResultInfo.Columns.Add("TimelineDocuments", typeof(int));
                 ResultInfo.Columns.Add("PastApplications", typeof(int));
                 DataRow rDr;
                 rDr = ResultInfo.NewRow();
                 rDr["ActiveJobApplications"] = dtActiveJobApplications.Rows.Count;
                 rDr["CurrentAppliationStatus"] = dtCurrentApplicationStatusDetails.Rows.Count;
                 rDr["Timeline"] = dtCurrentApplicationTimeLine.Rows.Count;
+                rDr["TimelineDocuments"] = dtCurrentApplicationTimeLineDocuments.Rows.Count;
                 rDr["PastApplications"] = dtCandidatePastApplicationStatus.Rows.Count;
 
                 ResultInfo.Rows.Add(rDr);
-                ds.Tables.Add(ResultInfo);
+                // ds.Tables.Add(ResultInfo);
                 ResultInfo.Dispose();
+
 
 
 
                 if (ds != null)
                 {
-
                     if (ds.Tables.Count > 0)
                     {
-                     
-                        jsonResult = JsonConvert.SerializeObject(ds);
+                        string xml = ds.GetXml();
+                        XmlDocument doc = new XmlDocument();
+                        doc.LoadXml(xml);
+
+
+                        var xTag = doc.GetElementsByTagName("ActiveJobApplications");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+                        xTag = doc.GetElementsByTagName("CurrentAppliationStatus");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+                        xTag = doc.GetElementsByTagName("Timeline");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+                        xTag = doc.GetElementsByTagName("TimelineDocuments");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+                        xTag = doc.GetElementsByTagName("PastApplications");
+                        if (xTag.Count == 1)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+
+
+                        //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
+                        jsonResult = JsonConvert.SerializeObject(doc);
                     }
                     else { return NoContent(); }
                 }
                 else { return NoContent(); }
+
+
 
 
                 // jsonResult = JsonConvert.SerializeObject(ds);
@@ -795,7 +1187,7 @@ namespace RTS.Controllers
 
 
         // POST api/<controller>
-        [HttpPost("list")] 
+        [HttpPost("list")]
         public ActionResult<string> Post([FromBody] CandidateRequestInfo value)
         {
             string jsonResult = "";
@@ -821,20 +1213,23 @@ namespace RTS.Controllers
                 //Get Candidate Basic Info  GetCandidateBasicInfo
                 RTS.JobStation.Models.CandidateRequestInfo RequestInfo = new RTS.JobStation.Models.CandidateRequestInfo();
                 RequestInfo.UserID = Int32.Parse(value.UserID);
-                RequestInfo.PageID = Int32.Parse( value.PageNo);
-                RequestInfo.Count = Int32.Parse( value.Count) ;
+                // RequestInfo.PageID = Int32.Parse( value.PageNo);
+                RequestInfo.PageID = Int32.Parse(value.PageNo); 
+                RequestInfo.Count = Int32.Parse(value.Count); 
                 RequestInfo.FilterType = value.FilterType;
 
                 RequestInfo.Keywords = value.Filter.Keywords;
+              //  RequestInfo.CandidateID = Int32.Parse(value.CandidateID);
                 RequestInfo.VacanyID = Int32.Parse(value.Filter.VacanyID);
                 RequestInfo.JobIndustryIDList = value.Filter.JobIndustryIDList;
-                RequestInfo.TotalExperience = Int32.Parse(value.Filter.Experience);
+                RequestInfo.TotalExperience = value.Filter.Experience;
                 RequestInfo.AgeList = value.Filter.Age;
                 RequestInfo.CandidateStatusIDList = value.Filter.CandidateStatusID;
                 RequestInfo.GenderList = value.Filter.Gender;
                 RequestInfo.NationalityIDList = value.Filter.NationalityID;
                 RequestInfo.EducationList = value.Filter.Education;
                 RequestInfo.LanguageSkillsList = value.Filter.LanguageSkills;
+                RequestInfo.VisaStatusList = value.Filter.VisaStatusList;
 
                 RequestInfo.showBanned = value.Filter.showOnlyBanned;
                 RequestInfo.showFavourites = value.Filter.showOnlyFavourites;
@@ -855,7 +1250,7 @@ namespace RTS.Controllers
 
             }
             catch
-            {
+             {
                 return StatusCode(500);
             }
 
@@ -872,13 +1267,18 @@ namespace RTS.Controllers
 
         // POST api/<controller>
         [HttpPost("create")]
-        public ActionResult<string> CreateCandidate([FromBody] CandidateCVInfo value)
+        public ActionResult<string> CreateCandidate([FromBody] CandidateCVInfo value, [FromQuery] string apikey, [FromQuery] string userkey, [FromQuery] string consumerkey, [FromQuery] string token, [FromQuery] int userid)
         {
             string jsonResult = "";
-            if (AuthenticateUser() == false)
+            //if (AuthenticateUser() == false)
+            //{
+            //    return Unauthorized();
+            //}
+
+          /*  if (apikey!= "123")
             {
                 return Unauthorized();
-            }
+            }*/
 
             string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
             RTS.JobStation.Controller.Candidate CandidateController = new RTS.JobStation.Controller.Candidate();
@@ -928,6 +1328,7 @@ namespace RTS.Controllers
                 candidate.WorkExperienceTotal = value.WorkExperienceTotal;
                 candidate.WorkExperienceUAE = value.WorkExperienceUAE;
                 candidate.WorkExperienceNonUAE = value.WorkExperienceNonUAE;
+                candidate.RelevantExperience = value.RelevantExperience;
                 candidate.UpdatedBy= Request.Headers["userid"];
                 candidate.UpdatedOn = DateTime.Now;
 
@@ -1035,6 +1436,26 @@ namespace RTS.Controllers
                 }
 
 
+
+                //Add Languages Known
+                RTS.JobStation.Controller.Candidatelanguage CandidatelanguageController = new RTS.JobStation.Controller.Candidatelanguage();
+                RTS.JobStation.Models.Candidatelanguage CandidatelanguageModel = new RTS.JobStation.Models.Candidatelanguage();
+                foreach (var Lang in value.LanguagesKnown)
+                {
+                    CandidatelanguageModel.CandidateID = CandidateID;
+                    CandidatelanguageModel.LanguageID = Lang.LanguageID;
+                    CandidatelanguageModel.proficiency = Lang.Proficiency;
+                    CandidatelanguageModel.UpdatedBy = Request.Headers["userid"];
+                    CandidatelanguageModel.UpdatedOn = DateTime.Now;
+                    CandidatelanguageController.Insert(CandidatelanguageModel, ref con, ref MyTran);
+                }
+
+
+
+                //positions applied
+          
+
+
                 //Add Job Industry
                 RTS.JobStation.Controller.Candidatejobindustry CandidatejobindustryController = new RTS.JobStation.Controller.Candidatejobindustry();
                 RTS.JobStation.Models.Candidatejobindustry CandidatejobindustryModel = new RTS.JobStation.Models.Candidatejobindustry();
@@ -1084,11 +1505,13 @@ namespace RTS.Controllers
         public string  RequestType { get; set; }
         public string  Count { get; set; }
         public string  PageNo { get; set; }
+       // public string CandidateID { get; set; }
         public CandidateFilterInfo Filter { get; set; }
     }
 
     public class CandidateFilterInfo
     {
+      
         public string  VacanyID { get; set; }
         public string Keywords { get; set; } 
         public string JobIndustryIDList { get; set; } 
@@ -1099,6 +1522,7 @@ namespace RTS.Controllers
         public string NationalityID { get; set; }
         public string Education { get; set; }
         public string LanguageSkills { get; set; }
+        public string VisaStatusList { get; set; }
         public Boolean showOnlyFavourites { get; set; }
         public Boolean showOnlyBanned { get; set; }
 
@@ -1139,10 +1563,14 @@ namespace RTS.Controllers
         public int WorkExperienceTotal { get; set; }
         public int WorkExperienceUAE { get; set; }
         public int WorkExperienceNonUAE { get; set; }
+        public int RelevantExperience { get; set; }
+        public string PrefferedOtherLocations { get; set; }
         public List<CandidateWorkHistory> EmployeeProfile { get; set; }
         public List<CandidateEducationHistory> EducationProfile { get; set; }
         public List<CandidatePrefferedJobLocation> PrefferedLocation { get; set; }
         public List<CandidateJobIndustry> JobIndustry { get; set; }
+        public List<CandidateLanguagesKnown> LanguagesKnown { get; set; }
+        public List<PositionApplied> PositionsApplied { get; set; }
     }
 
     public class CandidateWorkHistory
@@ -1179,12 +1607,25 @@ namespace RTS.Controllers
         public int LocationID { get; set; }
     }
 
+    public class CandidateLanguagesKnown
+    {
+        // public int CandidateID { get; set; }
+        public int LanguageID { get; set; }
+        public int Proficiency { get; set; }
+    }
+
+
     public class CandidateJobIndustry
     {
        // public int CandidateID { get; set; }
         public int IndustryID { get; set; }
     }
 
+    public class PositionApplied
+    {
+        // public int CandidateID { get; set; }
+        public int VacancyID { get; set; }
+    }
 
 
 }

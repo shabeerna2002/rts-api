@@ -51,6 +51,8 @@ Namespace JobStation.DAL
                 cmd.Parameters.Add("?p_WorkExperienceTotal", MySqlDbType.Int64)
                 cmd.Parameters.Add("?p_WorkExperienceUAE", MySqlDbType.Int64)
                 cmd.Parameters.Add("?p_WorkExperienceNonUAE", MySqlDbType.Int64)
+                cmd.Parameters.Add("?p_RelevantExperience", MySqlDbType.Int64)
+
                 cmd.Parameters.Add("?p_isHired", MySqlDbType.Bit)
                 cmd.Parameters.Add("?p_PostedOn", MySqlDbType.DateTime)
                 cmd.Parameters.Add("?p_isInActive", MySqlDbType.Bit)
@@ -96,6 +98,8 @@ Namespace JobStation.DAL
                 cmd.Parameters.Item("?p_WorkExperienceTotal").Value = c.WorkExperienceTotal
                 cmd.Parameters.Item("?p_WorkExperienceUAE").Value = c.WorkExperienceUAE
                 cmd.Parameters.Item("?p_WorkExperienceNonUAE").Value = c.WorkExperienceNonUAE
+                cmd.Parameters.Item("?p_RelevantExperience").Value = c.RelevantExperience
+
                 cmd.Parameters.Item("?p_isHired").Value = c.isHired
                 cmd.Parameters.Item("?p_PostedOn").Value = c.PostedOn
                 cmd.Parameters.Item("?p_isInActive").Value = c.isInActive
@@ -471,7 +475,7 @@ Namespace JobStation.DAL
                 ds.Tables.Add(dtActivityLogDocuments.Copy)
 
 
-                If ds.Tables(0).Rows.Count > 1 And ds.Tables(1).Rows.Count > 1 Then
+                If ds.Tables(0).Rows.Count > 0 And ds.Tables(1).Rows.Count > 0 Then
                     Dim ParentChildRelation As DataRelation = New DataRelation("ParentChild", ds.Tables("ActivityLog").Columns("ActivityLogID"), ds.Tables("ActivityDocuments").Columns("ActivityLogID"), True)
                     ParentChildRelation.Nested = True
                     ds.Relations.Add(ParentChildRelation)
@@ -555,7 +559,7 @@ Namespace JobStation.DAL
                 ds.Tables.Add(dtTimelineDocuments.Copy)
 
 
-                If ds.Tables(0).Rows.Count > 1 And ds.Tables(1).Rows.Count > 1 Then
+                If ds.Tables(0).Rows.Count > 0 And ds.Tables(1).Rows.Count > 0 Then
                     Dim ParentChildRelation As DataRelation = New DataRelation("ParentChild", ds.Tables("Timeline").Columns("TimelineID"), ds.Tables("TimelineDocuments").Columns("TimelineID"), True)
                     ParentChildRelation.Nested = True
                     ds.Relations.Add(ParentChildRelation)
@@ -583,7 +587,7 @@ Namespace JobStation.DAL
                 cmd.CommandText = commandtext
 
                 Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
-                Dim dtTimeline As DataTable = New DataTable("TimelineDocuments")
+                'Dim dtTimeline As DataTable = New DataTable("TimelineDocuments")
 
                 Return ds
             Catch ex As Exception
@@ -644,7 +648,7 @@ Namespace JobStation.DAL
                 If StartIndex = 1 Then
                     StartIndex = 0
                 Else
-                    StartIndex = (StartIndex * Count) - 1
+                    StartIndex = ((StartIndex - 1) * Count)
                 End If
 
 
@@ -661,16 +665,21 @@ Namespace JobStation.DAL
                 Dim CandidateFavouriteList As DataTable = New DataTable
                 Dim CandiateBannedList As DataTable = New DataTable
 
+                Dim TotalCandidatesCount As Integer = 0
+
+
                 If RequestInfo.FilterType.ToString.ToLower = "none" Then  'No filters has been applied, get all latest canddiates.
                     commandtext = "GetCandidateList"
                     cmd.CommandType = Data.CommandType.StoredProcedure
                     cmd.CommandText = commandtext
 
                 ElseIf RequestInfo.FilterType.ToString.ToLower = "filtered" Then ' There are filters applied
+                    'cmd.Parameters.Add("?p_CandidateID", MySqlDbType.Int64)
                     cmd.Parameters.Add("?p_VacancyID", MySqlDbType.Int64)
                     cmd.Parameters.Add("?p_Keywords", MySqlDbType.VarChar)
                     cmd.Parameters.Add("?p_JobIndustryIDList", MySqlDbType.VarChar)
-                    cmd.Parameters.Add("?p_TotalExperience", MySqlDbType.Int64)
+                    cmd.Parameters.Add("?p_MinExperience", MySqlDbType.VarChar)
+                    cmd.Parameters.Add("?p_MaxExperience", MySqlDbType.VarChar)
                     cmd.Parameters.Add("?p_AgeList", MySqlDbType.VarChar)
                     cmd.Parameters.Add("?p_CandidateStatusIDList", MySqlDbType.VarChar)
                     cmd.Parameters.Add("?p_GenderList", MySqlDbType.VarChar)
@@ -680,7 +689,11 @@ Namespace JobStation.DAL
 
 
 
-
+                    'If RequestInfo.CandidateID > 0 Then
+                    '    cmd.Parameters.Item("?p_CandidateID").Value = RequestInfo.CandidateID
+                    'Else
+                    '    cmd.Parameters.Item("?p_CandidateID").Value = 0
+                    'End If
 
 
                     If RequestInfo.VacanyID > 0 Then
@@ -701,10 +714,15 @@ Namespace JobStation.DAL
                         cmd.Parameters.Item("?p_JobIndustryIDList").Value = ""
                     End If
 
-                    If RequestInfo.TotalExperience.ToString.Trim.Length > 0 Then
-                        cmd.Parameters.Item("?p_TotalExperience").Value = RequestInfo.TotalExperience
+                    If RequestInfo.TotalExperience.ToString.Trim.Length > 2 Then
+                        Dim MinExp As String = RequestInfo.TotalExperience.Substring(0, RequestInfo.TotalExperience.IndexOf("-"))
+                        Dim MaxExp As String = RequestInfo.TotalExperience.Remove(0, RequestInfo.TotalExperience.IndexOf("-") + 1)
+                        cmd.Parameters.Item("?p_MinExperience").Value = MinExp
+                        cmd.Parameters.Item("?p_MaxExperience").Value = MaxExp
+
                     Else
-                        cmd.Parameters.Item("?p_TotalExperience").Value = ""
+                        cmd.Parameters.Item("?p_MinExperience").Value = ""
+                        cmd.Parameters.Item("?p_MaxExperience").Value = ""
                     End If
 
                     If RequestInfo.TotalExperience.ToString.Trim.Length > 0 Then
@@ -758,11 +776,30 @@ Namespace JobStation.DAL
                 dtCandidateList = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)  ' change parameters for proper output	
 
 
+
+
+
+
+
+
+
+                If RequestInfo.FilterType.ToString.ToLower = "none" Then
+                    'Get Total Candidates in the database
+                    TotalCandidatesCount = GetTotalActiveCandidatesCount(con, MyTrans)
+                ElseIf RequestInfo.FilterType.ToString.ToLower = "filtered" Then
+                    cmd.CommandText = "GetCandidateListFilteredCount"
+                    TotalCandidatesCount = GetTotalFilteredCandidatesCount(con, MyTrans, cmd)
+
+                End If
+
+
+
                 CandidateFavouriteList = GetCandidateFavouriteList(con, MyTrans, RequestInfo.UserID).Tables(0)
                 CandiateBannedList = GetCandidateBannedList(con, MyTrans, RequestInfo.UserID).Tables(0)
 
                 dtCandidateList.Columns.Add("isFavourite", GetType(Boolean))
                 dtCandidateList.Columns.Add("isBanned", GetType(Boolean))
+                dtCandidateList.Columns.Add("ProfilePic", GetType(String))
 
                 Dim CurrentCandidateID As Integer = 0
                 Dim dr As Data.DataRow
@@ -771,6 +808,15 @@ Namespace JobStation.DAL
 
                 Dim dtCandidateListTemp As DataTable = dtCandidateList.Clone
                 For Each dr In dtCandidateList.Rows
+
+                    If dr("Gender").ToString.ToLower = "male" Then
+                        dr("ProfilePic") = "male.png"
+                    ElseIf dr("Gender").ToString.ToLower = "female" Then
+                        dr("ProfilePic") = "female.png"
+                    Else
+                        dr("ProfilePic") = "gender.png"
+                    End If
+
                     CurrentCandidateID = dr("CandidateID")
 
 
@@ -838,6 +884,12 @@ Namespace JobStation.DAL
 
                 CandidateInfo.TableName = "CandidateBasicInfo"
 
+
+
+
+
+
+
                 Dim isCurrentCandidateShortListable = False
                 If Not dtCandidateList Is Nothing Then
                     If dtCandidateList.Rows.Count > 0 Then
@@ -860,8 +912,33 @@ Namespace JobStation.DAL
                     End If
                 End If
 
-                'Load ShortListable Jobs
+                '************
+                'Load candiate Languages
+                If Not dtCandidateList Is Nothing Then
+                    If dtCandidateList.Rows.Count > 0 Then
+                        Dim CandidateLanguagesKnown As DataTable = New DataTable
+                        CandidateLanguagesKnown = GetCandidateLanguagesKnown(con, MyTrans, CurrentCandidateID).Tables(0)
+                        Dim LanguagesKnown As String = ""
+                        For Each dr In CandidateLanguagesKnown.Rows
+                            LanguagesKnown = LanguagesKnown & dr("Language").ToString & ","
+                        Next
+                        If LanguagesKnown.IndexOf(",") >= 0 Then
+                            LanguagesKnown = LanguagesKnown.Remove(LanguagesKnown.LastIndexOf(","), 1)
+                        End If
 
+                        If LanguagesKnown.Trim.Length = 0 Then
+                            LanguagesKnown = "-"
+                        End If
+                        CandidateInfo.Columns.Add("LanguagesKnown", GetType(String))
+                        CandidateInfo.Rows(0)("LanguagesKnown") = LanguagesKnown
+                        '*******************
+                    End If
+                End If
+
+
+
+
+                'Load ShortListable Jobs
 
                 If isCurrentCandidateShortListable = True Then
                     ShortlistableJobs = GetShortListableJobs(con, MyTrans, CurrentCandidateID).Tables(0)
@@ -938,14 +1015,19 @@ Namespace JobStation.DAL
 
                 GeneralInfo.TableName = "GeneralInfo"
                 GeneralInfo.Columns.Add("TotalCandidates", GetType(String))
+                GeneralInfo.Columns.Add("TotalInCurrentResult", GetType(String))
                 GeneralInfo.Columns.Add("CurrentPage", GetType(String))
                 GeneralInfo.Columns.Add("isFilterApplied", GetType(Boolean))
                 Dim GIdr As DataRow
                 GIdr = GeneralInfo.NewRow
-                GIdr("TotalCandidates") = 0
+
+                GIdr("TotalCandidates") = TotalCandidatesCount
+
+
+
                 If Not dtCandidateList Is Nothing Then
                     If dtCandidateList.Rows.Count > 0 Then
-                        GIdr("TotalCandidates") = dtCandidateList.Rows.Count
+                        GIdr("TotalInCurrentResult") = dtCandidateList.Rows.Count
                     End If
                 End If
                 GIdr("CurrentPage") = RequestInfo.PageID
@@ -954,6 +1036,7 @@ Namespace JobStation.DAL
                 Else
                     GIdr("isFilterApplied") = False
                 End If
+
                 GeneralInfo.Rows.Add(GIdr)
                 GeneralInfo.TableName = "GeneralInfo"
 
@@ -1025,6 +1108,8 @@ Namespace JobStation.DAL
 
 
 
+
+
         Public Function GetCandidateDetails(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, CandidateID As Integer, RequestingUserID As Integer)
 
             Dim CandidateList As DataSet = New DataSet("CandidateDetails")
@@ -1042,6 +1127,30 @@ Namespace JobStation.DAL
                 CandidateInfo.Columns.Add("isShortListable", GetType(Boolean))
                 CandidateInfo.Rows(0)("isFavourite") = False
                 CandidateInfo.Rows(0)("isBanned") = False
+
+
+
+                'Load candiate Languages
+                Dim CandidateLanguagesKnown As DataTable = New DataTable
+                CandidateLanguagesKnown = GetCandidateLanguagesKnown(con, MyTrans, CandidateID).Tables(0)
+
+                Dim LanguagesKnown As String = ""
+
+                For Each dr In CandidateLanguagesKnown.Rows
+                    LanguagesKnown = LanguagesKnown & dr("Language").ToString & ","
+                Next
+
+                If LanguagesKnown.IndexOf(",") >= 0 Then
+                    LanguagesKnown = LanguagesKnown.Remove(LanguagesKnown.LastIndexOf(","), 1)
+                End If
+
+                If LanguagesKnown.Trim.Length = 0 Then
+                    LanguagesKnown = "-"
+                End If
+
+                CandidateInfo.Columns.Add("LanguagesKnown", GetType(String))
+                CandidateInfo.Rows(0)("LanguagesKnown") = LanguagesKnown
+
 
 
 
@@ -1125,7 +1234,10 @@ Namespace JobStation.DAL
 
                 CandidateJobIndustry = GetCandidatePrefferedLocation(con, MyTrans, CandidateID).Tables(0)
                         CandidateJobIndustry.TableName = "CandidateJobIndustry"
-                        CandidateList.Tables.Add(CandidateJobIndustry.Copy)
+                CandidateList.Tables.Add(CandidateJobIndustry.Copy)
+
+
+
 
 
 
@@ -1149,6 +1261,27 @@ Namespace JobStation.DAL
 
         End Function
 
+
+        Function GetTotalActiveCandidatesCount(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As Integer
+            Try
+                Dim cmd As New MySqlCommand
+                Dim commandtext As String = "GetCandidateListCount"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+                Return JobStation.DatabaseCommands.ExecuteScalar(cmd.CommandType, cmd, con, MyTrans) ' change parameters for proper output	
+            Catch ex As Exception
+                Return -1
+            End Try
+        End Function
+
+        Function GetTotalFilteredCandidatesCount(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, cmd As MySqlCommand) As Integer
+            Try
+
+                Return JobStation.DatabaseCommands.ExecuteScalar(cmd.CommandType, cmd, con, MyTrans) ' change parameters for proper output	
+            Catch ex As Exception
+                Return -1
+            End Try
+        End Function
         Public Function GetCandidateFavouriteList(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, UserID As Integer) As DataSet
 
             Try
@@ -1258,6 +1391,139 @@ Namespace JobStation.DAL
 
         End Function
 
+
+        Public Function GetCandidateAddFormDropDownContents(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+
+                Dim dtGetVacancyListActive As New DataTable
+                Dim dtGetLocationActive As New DataTable
+                Dim dtGetJobIndustryActive As New DataTable
+                Dim dtGetCountryNationalityActive As New DataTable
+                Dim dtGetReligionActive As New DataTable
+                Dim dtGetCasteActive As New DataTable
+                Dim dtGetLanguageActive As New DataTable
+
+                Dim dtGenderList As New DataTable("Genders")
+                Dim dtMaritialStatus As New DataTable("MaritialStatus")
+                Dim dtVisaStatus As New DataTable
+                Dim dtNoticePeriod As New DataTable("NoticePeriod")
+                Dim dtEducationQualification As New DataTable
+
+
+                dtGenderList.Columns.Add("Gender", GetType(String))
+                Dim dr As DataRow
+                dr = dtGenderList.NewRow
+                dr("Gender") = "Male"
+                dtGenderList.Rows.Add(dr)
+                dr = dtGenderList.NewRow
+                dr("Gender") = "Female"
+                dtGenderList.Rows.Add(dr)
+
+                dtMaritialStatus.Columns.Add("StatusID", GetType(String))
+                dtMaritialStatus.Columns.Add("Status", GetType(String))
+                dr = dtMaritialStatus.NewRow
+                dr("StatusID") = "Single"
+                dr("Status") = "Single"
+                dtMaritialStatus.Rows.Add(dr)
+                dr = dtMaritialStatus.NewRow
+                dr("StatusID") = "Married"
+                dr("Status") = "Married"
+                dtMaritialStatus.Rows.Add(dr)
+
+                dtNoticePeriod.Columns.Add("periodID", GetType(String))
+                dtNoticePeriod.Columns.Add("period", GetType(String))
+                dr = dtNoticePeriod.NewRow
+                dr("periodID") = "1"
+                dr("period") = "1 month"
+                dtNoticePeriod.Rows.Add(dr)
+                dr = dtNoticePeriod.NewRow
+                dr("periodID") = "2"
+                dr("period") = "2 months"
+                dtNoticePeriod.Rows.Add(dr)
+                dr = dtNoticePeriod.NewRow
+                dr("periodID") = "3"
+                dr("period") = "3 months"
+                dtNoticePeriod.Rows.Add(dr)
+                dr = dtNoticePeriod.NewRow
+                dr("periodID") = "6"
+                dr("period") = "6 months"
+                dtNoticePeriod.Rows.Add(dr)
+
+
+                Dim commandtext As String = "GetVacancyListActive"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                dtGetVacancyListActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+
+
+                cmd.CommandText = "GetVisaStatusActive"
+                dtVisaStatus = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+                cmd.CommandText = "GetEducationQualificationActive"
+                dtEducationQualification = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+
+                cmd.CommandText = "GetLocationActive"
+                dtGetLocationActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+                cmd.CommandText = "GetJobIndustryActive"
+                dtGetJobIndustryActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+                cmd.CommandText = "GetCountryNationalityActive"
+                dtGetCountryNationalityActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+                cmd.CommandText = "GetReligionActive"
+                dtGetReligionActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+
+                cmd.CommandText = "GetCasteActive"
+                dtGetCasteActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+                cmd.CommandText = "GetLanguageActive"
+                dtGetLanguageActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+
+                dtGetVacancyListActive.TableName = "VacancyList"
+                dtGetLocationActive.TableName = "Location"
+                dtGetJobIndustryActive.TableName = "JobIndustry"
+                dtGetCountryNationalityActive.TableName = "CountryNationalityList"
+                dtGetReligionActive.TableName = "Religion"
+                dtGetCasteActive.TableName = "Caste"
+                dtGetLanguageActive.TableName = "Language"
+                dtVisaStatus.TableName = "VisaStatus"
+                dtEducationQualification.TableName = "EducationQualification"
+
+
+                Dim ds As New DataSet
+                ds.DataSetName = "DisplayComponents"
+                ds.Tables.Add(dtGetVacancyListActive.Copy)
+                ds.Tables.Add(dtGetLocationActive.Copy)
+                ds.Tables.Add(dtGetJobIndustryActive.Copy)
+                ds.Tables.Add(dtGetReligionActive.Copy)
+                ds.Tables.Add(dtGetCasteActive.Copy)
+                ds.Tables.Add(dtGetLanguageActive.Copy)
+                ds.Tables.Add(dtGetCountryNationalityActive.Copy)
+                ds.Tables.Add(dtGenderList)
+                ds.Tables.Add(dtMaritialStatus)
+                ds.Tables.Add(dtVisaStatus.Copy)
+                ds.Tables.Add(dtNoticePeriod)
+                ds.Tables.Add(dtEducationQualification.Copy)
+
+
+
+
+
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
         Public Function GetCandidateApplicationStatus(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, ApplicationID As Integer) As DataSet
 
             Try
@@ -1346,6 +1612,28 @@ Namespace JobStation.DAL
 
                 Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
                 Dim dtTimeline As DataTable = New DataTable("CandidatePrefferedLocation")
+
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
+        Public Function GetCandidateLanguagesKnown(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, CandidateID As Integer) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+                cmd.Parameters.Add("?p_CandidateID", MySqlDbType.Int64)
+                cmd.Parameters.Item("?p_CandidateID").Value = CandidateID
+
+
+                Dim commandtext As String = "GetCandidateLanguagesKnown"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
+                Dim dtTimeline As DataTable = New DataTable("GetCandidateLanguagesKnown")
 
                 Return ds
             Catch ex As Exception

@@ -542,6 +542,11 @@ Namespace JobStation.DAL
 
         End Function
 
+
+
+
+
+
         Public Function GetVacancyDetails(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, VacancyID As Integer) As DataSet
 
             Try
@@ -561,15 +566,75 @@ Namespace JobStation.DAL
 
         End Function
 
+
+        Public Function GetVacancyListActive(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+
+                Dim commandtext As String = "GetVacancyListActive"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
+
+        Public Function GetVacancyListActiveForCareerPortal(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+
+                Dim commandtext As String = "GetVacancyListActiveForCareerPortal"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
+        Public Function GetVacancyDetailsForCareerPortal(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, VacancyID As Integer) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+                cmd.Parameters.Add("?p_VacancyID", MySqlDbType.VarChar)
+                cmd.Parameters.Item("?p_VacancyID").Value = VacancyID
+
+                Dim commandtext As String = "GetVacancyDetailsForCareerPortal"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
+
+
         Public Function PublishJob(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, VacancyID As Integer, isPublish As Boolean) As String
 
             Try
                 Dim cmd As New MySqlCommand
                 cmd.Parameters.Add("?p_VacancyID", MySqlDbType.VarChar)
                 cmd.Parameters.Item("?p_VacancyID").Value = VacancyID
+
+                cmd.Parameters.Add("?p_OpeningDate", MySqlDbType.DateTime)
+                cmd.Parameters.Item("?p_OpeningDate").Value = Date.Now
+
+
                 cmd.Parameters.Add("?p_isPublished", MySqlDbType.Bit)
-
-
                 cmd.Parameters.Item("?p_isPublished").Value = isPublish
 
 
@@ -625,6 +690,64 @@ Namespace JobStation.DAL
             End Try
 
         End Function
+
+        Public Function GetJobAddFormDropDownContents(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+
+                Dim dtGetDesignationsActive As New DataTable
+                Dim dtGetEnityActive As New DataTable
+                Dim dtGetUserActiveDirectoryFullNameActive As New DataTable
+                Dim dtGetDepartmentsActive As New DataTable
+                Dim dtGetPositionTypesActive As New DataTable
+
+
+                Dim commandtext As String = "GetDesignationsActive"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                dtGetDesignationsActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+
+                cmd.CommandText = "GetEnityActive"
+                dtGetEnityActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+                cmd.CommandText = "GetUserActiveDirectoryFullNameActive"
+                dtGetUserActiveDirectoryFullNameActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+                cmd.CommandText = "GetDepartmentsActive"
+                dtGetDepartmentsActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+
+                cmd.CommandText = "GetPositionTypesActive"
+                dtGetPositionTypesActive = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+
+
+
+                dtGetDesignationsActive.TableName = "Designations"
+                dtGetEnityActive.TableName = "Destinations"
+                dtGetUserActiveDirectoryFullNameActive.TableName = "Users"
+                dtGetDepartmentsActive.TableName = "Departments"
+                dtGetPositionTypesActive.TableName = "PositionTypes"
+
+
+                Dim ds As New DataSet
+                ds.DataSetName = "DisplayComponents"
+                ds.Tables.Add(dtGetDesignationsActive.Copy)
+                ds.Tables.Add(dtGetEnityActive.Copy)
+                ds.Tables.Add(dtGetUserActiveDirectoryFullNameActive.Copy)
+                ds.Tables.Add(dtGetDepartmentsActive.Copy)
+                ds.Tables.Add(dtGetPositionTypesActive.Copy)
+
+
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
 
 
 

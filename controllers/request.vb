@@ -35,12 +35,20 @@ Namespace JobStation.Controller
 
 
             If isUpdatable = True Then
-                If UpdateAction(con, MyTrans, RequestID, ActionID, TransitionID) = "200" Then
-                    TransitState(con, MyTrans, ActionTypeID, ApplicationID, DesiredStateID, RequestID, TransactionUserID)
-                End If
+                'If UpdateAction(con, MyTrans, RequestID, ActionID, TransitionID) = "200" Then
+                TransitState(con, MyTrans, ActionTypeID, ApplicationID, DesiredStateID, RequestID, TransactionUserID)
+                ' End If
             End If
 
             Return "200"
+        End Function
+
+
+
+
+        Function GetRequestGroupWiseDetails(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, StateGroupID As Integer, CurrentLoggedInUserID As Integer, VacancyID As Integer, GroupResultBy As String) As Data.DataSet
+            Dim DA_request As New DAL.Request
+            Return DA_request.GetRequestGroupWiseDetails(con, MyTrans, StateGroupID, CurrentLoggedInUserID, VacancyID, GroupResultBy)
         End Function
 
         Private Function checkIfEvaluationCompletedByAllInterviewers(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, ApplicationID As Integer) As Boolean

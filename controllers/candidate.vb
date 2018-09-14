@@ -73,6 +73,14 @@ Namespace JobStation.Controller
             ' Return DA_usermaster.GetCandidateList(con, MyTrans, PageID, Count)
         End Function
 
+        Public Function GetCandidateAddFormDropDownContents(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As Data.DataSet
+            Dim DA_usermaster As New DAL.Candidate
+            Return DA_usermaster.GetCandidateAddFormDropDownContents(con, MyTrans)
+            ' Return DA_usermaster.GetCandidateList(con, MyTrans, PageID, Count)
+        End Function
+
+
+
 
 
     End Class

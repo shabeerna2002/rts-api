@@ -37,6 +37,7 @@
         Dim _WorkExperienceTotal As Integer = 0
         Dim _WorkExperienceUAE As Integer = 0
         Dim _WorkExperienceNonUAE As Integer = 0
+        Dim _RelevantExperience As Integer = 0
         Dim _isHired As Boolean = False
         Dim _PostedOn As DateTime = "01-01-1900 12:00:00 AM"
         Dim _isInActive As Boolean = False
@@ -372,6 +373,17 @@
             End Set
         End Property
 
+
+        Public Property RelevantExperience() As Integer
+            Get
+                Return _RelevantExperience
+            End Get
+            Set(ByVal value As Integer)
+                _RelevantExperience = value
+            End Set
+        End Property
+
+
         Public Property isHired() As Boolean
             Get
                 Return _isHired
@@ -446,16 +458,19 @@
         Public Property Count As Integer=100
         Public Property PageID As Integer = 1
 
+
+        ' Public Property CandidateID As Integer = 0
         Public Property VacanyID As Integer = 0
         Public Property Keywords As String = ""
         Public Property JobIndustryIDList As String = ""
-        Public Property TotalExperience As Integer = 0
+        Public Property TotalExperience As String = ""
         Public Property AgeList As String = ""
         Public Property CandidateStatusIDList As String = ""
         Public Property GenderList As String = ""
         Public Property NationalityIDList As String = ""
         Public Property EducationList As String = ""
         Public Property LanguageSkillsList As String = ""
+        Public Property VisaStatusList As String = ""
         Public Property showFavourites As Boolean = False
         Public Property showBanned As Boolean = False
     End Class

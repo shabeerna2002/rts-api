@@ -134,7 +134,21 @@ namespace RTS.Controllers
                         ds.DataSetName = "JobListSummary";
                         string xml = ds.GetXml();
                         XmlDocument doc = new XmlDocument();
+
                         doc.LoadXml(xml);
+
+                        var xTag = doc.GetElementsByTagName("JobInfo");
+                        if (xTag.Count == 2)
+                        {
+                            var attribute = doc.CreateAttribute("json", "Array", "http://james.newtonking.com/projects/json");
+                            attribute.InnerText = "true";
+                            attribute.Value = "true";
+
+                            var node = xTag.Item(0) as XmlElement;
+                            node.Attributes.Append(attribute);
+                        }
+
+
                         //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
                         jsonResult = JsonConvert.SerializeObject(doc);
                     }
@@ -236,8 +250,8 @@ namespace RTS.Controllers
             {
                 con = RTS.JobStation.DatabaseCommands.OpenConnection();
                 MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
-                 Jobs.PublishJob(ref con, ref MyTran, vacancyid, isPublish);
-                return Ok("Request processed");
+                Jobs.PublishJob(ref con, ref MyTran, vacancyid, isPublish);
+                return Ok();
             }
             catch (System.IO.IOException e)
             {
@@ -278,7 +292,7 @@ namespace RTS.Controllers
                 con = RTS.JobStation.DatabaseCommands.OpenConnection();
                 MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
                 Jobs.CloseJob(ref con, ref MyTran, vacancyid, isClosed);
-                return Ok("Request processed");
+                return Ok();
             }
             catch (System.IO.IOException e)
             {
@@ -505,7 +519,7 @@ namespace RTS.Controllers
                 {
 
                     RTS.JobStation.Controller.Request RequestWorkFlowController = new RTS.JobStation.Controller.Request();
-                    RequestWorkFlowController.TransitionAction(ref con, ref MyTran, 100, 0, ApplicationID, RequesterUserID, StateID, 0, AppliedByUserID, 0);
+                    RequestWorkFlowController.TransitionAction(ref con, ref MyTran,  100, 0, ApplicationID, RequesterUserID, StateID, 0, AppliedByUserID, 0);
 
                 }
 
@@ -577,8 +591,10 @@ namespace RTS.Controllers
                 return Unauthorized();
             }
 
-            AddVacancyAsync(value);
-            return Ok("Vacancy Created");
+            // AddVacancyAsync(value);
+
+            AddVacancySync(value);
+            return Ok();
 
 
         }
@@ -659,7 +675,34 @@ namespace RTS.Controllers
                 JobReqModel.UpdatedOn = DateTime.Now;
                 JobReqController.Insert(JobReqModel, ref con, ref MyTran);
 
-               // return Ok("Vacancy Created");
+
+                AddJobInterviewerInfo(value.JobInterviewerList,VacancyID,ref con, ref MyTran);
+
+                // return Ok("Vacancy Created");
+
+                //Add to JobDepartment and JobEntity
+
+                RTS.JobStation.Controller.Jobentity JobEntityController = new RTS.JobStation.Controller.Jobentity();
+                RTS.JobStation.Models.Jobentity JobEntityModel = new RTS.JobStation.Models.Jobentity();
+
+                JobEntityModel.EntityID = value.RequestingEntityID;
+                JobEntityModel.VacancyID = VacancyID;
+                JobEntityModel.UpdatedBy = Request.Headers["userid"];
+                JobEntityController.Insert(JobEntityModel, ref con, ref MyTran);
+
+
+
+                RTS.JobStation.Controller.Jobdepartment JobDepartmentController = new RTS.JobStation.Controller.Jobdepartment();
+                RTS.JobStation.Models.Jobdepartment JobDepartmentModel = new RTS.JobStation.Models.Jobdepartment();
+
+                JobDepartmentModel.DepartmentID = value.RequestingDepartmentID;
+                
+                JobDepartmentModel.VacancyID = VacancyID;
+                JobDepartmentModel.UpdatedBy = Request.Headers["userid"];
+                JobDepartmentController.Insert(JobDepartmentModel, ref con, ref MyTran);
+
+
+
 
             }
             catch
@@ -726,7 +769,13 @@ namespace RTS.Controllers
                 EmpReqModel.UpdatedOn = DateTime.Now;
                 EmpReqModel.EmployeeRequestID = EmpReqController.GetEmployeeRequestID(ref con, ref MyTran, VacacnyID);
                 EmpReqController.Update(EmpReqModel, ref con, ref MyTran);
+
+
+
                 
+
+
+
                 // return Ok("Vacancy Created");
 
             }
@@ -743,6 +792,102 @@ namespace RTS.Controllers
             }
         }
 
+        private void AddJobInterviewerInfo(List<JobInterviewerInfo> value, int VacancyID, ref MySql.Data.MySqlClient.MySqlConnection con, ref MySql.Data.MySqlClient.MySqlTransaction MyTran)
+        {
+            string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
+
+           
+
+            try
+            {              
+                //Add Work History, Employee Profile
+                RTS.JobStation.Controller.JobInterviewer JobInterviewerController = new RTS.JobStation.Controller.JobInterviewer();
+                RTS.JobStation.Models.JobInterviewer JobInterviewerModel = new RTS.JobStation.Models.JobInterviewer();
+                foreach (var Interviewer in value)
+                {
+                    JobInterviewerModel.VacancyID = VacancyID;
+                    JobInterviewerModel.InterviewerUserID = Interviewer.InterviewerUserID;
+                    JobInterviewerModel.isEvaluator = Interviewer.isEvaluator;
+                    JobInterviewerModel.isMandatory = Interviewer.isMandatory;
+                    JobInterviewerModel.UpdatedBy = Request.Headers["userid"];
+                    JobInterviewerModel.UpdatedOn = DateTime.Now;
+                    JobInterviewerController.Insert(JobInterviewerModel, ref con, ref MyTran);
+                }
+
+
+                //Add Education History, Education Profile
+                RTS.JobStation.Controller.Educationhistory EducationHistoryController = new RTS.JobStation.Controller.Educationhistory();
+                RTS.JobStation.Models.Educationhistory EducationHistoryModel = new RTS.JobStation.Models.Educationhistory();
+
+                
+            }
+            catch
+            {
+
+            }
+           
+
+        }
+
+
+        [HttpGet("JobAddFormDisplayComponents")]
+        public ActionResult<string> GetCandidateAddFormDropDownContents()
+        {
+            string jsonResult = "";
+            if (AuthenticateUser() == false)
+            {
+                return Unauthorized();
+            }
+
+
+            string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
+            RTS.JobStation.Controller.Vacancy Jobs = new RTS.JobStation.Controller.Vacancy();
+            // DataSet ds = new DataSet("CandidateTimeline");
+            DataSet ds = new DataSet();
+            MySql.Data.MySqlClient.MySqlConnection con = null;
+            MySql.Data.MySqlClient.MySqlTransaction MyTran = null;
+            try
+            {
+                con = RTS.JobStation.DatabaseCommands.OpenConnection();
+                MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
+                ds = Jobs.GetCandidateAddFormDropDownContents(ref con, ref MyTran);
+
+                if (ds != null)
+                {
+
+                    if (ds.Tables.Count > 0)
+                    {
+                        //string xml = ds.GetXml();
+                        //XmlDocument doc = new XmlDocument();
+                        //doc.LoadXml(xml);
+                        //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
+                        jsonResult = JsonConvert.SerializeObject(ds);
+                    }
+                    else { return NoContent(); }
+                }
+                else { return NoContent(); }
+
+
+                // jsonResult = JsonConvert.SerializeObject(ds);
+            }
+            catch (System.IO.IOException e)
+            {
+                return StatusCode(501, "Error" + e.Message.ToString());
+            }
+
+            finally
+            {
+                RTS.JobStation.DatabaseCommands.CloseTransaction(ref MyTran);
+                RTS.JobStation.DatabaseCommands.CloseConnection(ref con);
+
+            }
+
+
+            return Ok(jsonResult);
+
+        }
+
+
     }
 
     public class VacancyInfo
@@ -758,7 +903,28 @@ namespace RTS.Controllers
         public string NationalityInfo { get; set; }
         public int RequestedByUserID { get; set; }
         public int RequestingDepartmentID { get; set; }
+        public int RequestingEntityID { get; set; }
         public int PositionTypeID { get; set; }
+        public string RefNo { get; set; }
+        public DateTime RequestedOn { get; set; }
+        public DateTime TargetJoiningDate { get; set; }
+        public List<JobInterviewerInfo> JobInterviewerList { get; set; }
+        // public DateTime OpeningDate { get; set; }
+
+
+    }
+
+
+
+
+    public class JobInterviewerInfo
+    {
+      
+        public int InterviewerUserID { get; set; }
+        public bool isMandatory { get; set; }
+        public bool isEvaluator { get; set; }
+        public string Description { get; set; }
+      
 
         // public DateTime OpeningDate { get; set; }
 

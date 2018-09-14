@@ -50,6 +50,22 @@ Namespace JobStation.Controller
             Dim DA_usermaster As New DAL.Vacancy
             Return DA_usermaster.GetJobListSummary(con, MyTrans, VacancyID, DepartmentID, EntityID, JobTitle, isClosed)
         End Function
+
+        Public Function GetVacancyListActive(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As Data.DataSet
+            Dim DA_usermaster As New DAL.Vacancy
+            Return DA_usermaster.GetVacancyListActive(con, MyTrans)
+        End Function
+
+        Public Function GetVacancyListActiveForCareerPortal(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As Data.DataSet
+            Dim DA_usermaster As New DAL.Vacancy
+            Return DA_usermaster.GetVacancyListActiveForCareerPortal(con, MyTrans)
+        End Function
+
+        Public Function GetVacancyDetailsForCareerPortal(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, VacancyID As Integer) As Data.DataSet
+            Dim DA_usermaster As New DAL.Vacancy
+            Return DA_usermaster.GetVacancyDetailsForCareerPortal(con, MyTrans, VacancyID)
+        End Function
+
         Public Function PublishJob(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, VacancyID As Integer, isPublish As Boolean) As String
             Dim DA_usermaster As New DAL.Vacancy
             Return DA_usermaster.PublishJob(con, MyTrans, VacancyID, isPublish)
@@ -58,6 +74,12 @@ Namespace JobStation.Controller
         Public Function CloseJob(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, VacancyID As Integer, isCloseJob As Boolean) As String
             Dim DA_usermaster As New DAL.Vacancy
             Return DA_usermaster.CloseJob(con, MyTrans, VacancyID, isCloseJob)
+        End Function
+
+        Public Function GetCandidateAddFormDropDownContents(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction) As Data.DataSet
+            Dim DA_usermaster As New DAL.Vacancy
+            Return DA_usermaster.GetJobAddFormDropDownContents(con, MyTrans)
+            ' Return DA_usermaster.GetCandidateList(con, MyTrans, PageID, Count)
         End Function
 
 

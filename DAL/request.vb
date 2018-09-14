@@ -426,6 +426,164 @@ Namespace JobStation.DAL
 
 
 
+        Public Function GetRequestGroupWiseDetails(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, StateGroupID As Integer, CurrentLoggedInUserID As Integer, VacancyID As Integer, GroupResultBy As String) As DataSet
+
+            Try
+                Dim ds As New DataSet
+                Dim RequestList As New DataTable("RequestList")
+                Dim RequestDetails As New DataTable("RequestDetails")
+                Dim RequestAdditionalInfo As New DataTable("RequestAdditionalInfo")
+                Dim cmd As New MySqlCommand
+                cmd.Parameters.Add("?p_StateGroupID", MySqlDbType.Int64)
+                cmd.Parameters.Item("?p_StateGroupID").Value = StateGroupID
+                cmd.Parameters.Add("?p_vacancyid", MySqlDbType.Int64)
+                cmd.Parameters.Item("?p_vacancyid").Value = VacancyID
+
+                Dim commandtext As String = "GetRequestGroupWise"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                RequestList = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans).Tables(0)
+                RequestList.TableName = "RequestList"
+                Dim RequestIDList As String = ""
+                If Not RequestList Is Nothing Then
+                    If RequestList.Rows.Count > 0 Then
+                        '****Create coloumn with image details********
+
+                        RequestList.Columns.Add("ProfilePic", GetType(String))
+                        For Each dr In RequestList.Rows
+                            If dr("gender").ToString.ToLower = "male" Then
+                                dr("ProfilePic") = "male.png"
+                            Else
+                                dr("ProfilePic") = "female.png"
+                            End If
+                            RequestIDList += dr("RequestID") & ","
+                        Next
+                        If RequestIDList.IndexOf(",") >= 0 Then
+                            RequestIDList = RequestIDList.Remove(RequestIDList.LastIndexOf(","), 1)
+                        End If
+                    End If
+                End If
+
+
+                If RequestIDList.Length > 0 Then
+                    RequestDetails = GetRequestDetails(con, MyTrans, RequestIDList, CurrentLoggedInUserID).Tables(0)
+
+                    '************Disabled as we dont use for this project
+                    'RequestAdditionalInfo = GetRequestAdditionalInfo(con, MyTrans, RequestIDList).Tables(0)
+                    '*****************************************
+                End If
+
+
+
+                Dim dt1 As New DataTable
+                dt1 = RequestList.Copy()
+                dt1.TableName = "RequestList"
+                Dim dt2 As New DataTable
+                dt2 = RequestDetails.Copy()
+                dt2.TableName = "RequestDetails"
+
+                Dim dt3 As New DataTable
+                dt3 = RequestAdditionalInfo.Copy()
+                dt3.TableName = "RequestAdditionalInfo"
+
+                ds.Tables.Add(dt1)
+                ds.Tables.Add(dt2)
+                ds.Tables.Add(dt3)
+
+                If dt1.Rows.Count > 1 And dt2.Rows.Count > 1 Then
+                    Dim ParentChildRelation As DataRelation = New DataRelation("ParentChild", ds.Tables("RequestList").Columns("RequestID"), ds.Tables("RequestDetails").Columns("RequestID"), True)
+                    ParentChildRelation.Nested = True
+                    ds.Relations.Add(ParentChildRelation)
+                End If
+
+
+                If dt1.Rows.Count > 1 And dt2.Rows.Count > 1 And dt3.Rows.Count > 1 Then
+                    Dim ParentChildRelation1 As DataRelation = New DataRelation("ParentChild1", ds.Tables("RequestList").Columns("RequestID"), ds.Tables("RequestAdditionalInfo").Columns("RequestID"), True)
+                    ParentChildRelation1.Nested = True
+                    ds.Relations.Add(ParentChildRelation1)
+                End If
+
+
+
+                ds.DataSetName = "Request"
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
+
+
+        Public Function GetRequestGroupWise(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, StateGroupID As Integer) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+                cmd.Parameters.Add("?p_StateGroupID", MySqlDbType.Int64)
+                cmd.Parameters.Item("?p_StateGroupID").Value = StateGroupID
+
+
+                Dim commandtext As String = "GetRequestGroupWise"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
+
+
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
+        Public Function GetRequestDetails(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, RequestIDList As String, CurrentLoggedInUserID As Integer) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+                cmd.Parameters.Add("?p_RequestIDList", MySqlDbType.VarChar)
+                cmd.Parameters.Item("?p_RequestIDList").Value = RequestIDList
+                cmd.Parameters.Add("?p_userID", MySqlDbType.Int16)
+                cmd.Parameters.Item("?p_userID").Value = CurrentLoggedInUserID
+
+
+
+                Dim commandtext As String = "GetRequestDetails"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
+
+
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
+
+        Public Function GetRequestAdditionalInfo(ByRef con As MySqlConnection, ByRef MyTrans As MySqlTransaction, RequestIDList As String) As DataSet
+
+            Try
+                Dim cmd As New MySqlCommand
+                cmd.Parameters.Add("?p_RequestIDList", MySqlDbType.VarChar)
+                cmd.Parameters.Item("?p_RequestIDList").Value = RequestIDList
+
+
+                Dim commandtext As String = "GetRequestAdditionalInfo"
+                cmd.CommandType = Data.CommandType.StoredProcedure
+                cmd.CommandText = commandtext
+
+                Dim ds As DataSet = JobStation.DatabaseCommands.GetDataset(cmd.CommandType, cmd, con, MyTrans)
+
+
+                Return ds
+            Catch ex As Exception
+                Return Nothing
+            End Try
+
+        End Function
 
     End Class
 End Namespace

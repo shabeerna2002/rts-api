@@ -20,7 +20,7 @@ namespace API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class ValuesController : ControllerBase
-       
+
     {
 
         string NewToken = "";
@@ -56,19 +56,19 @@ namespace API.Controllers
         //  public ActionResult<IEnumerable<RTS.JobStation.Models.Religion>> Get()
         public ActionResult<string> Get()
         {
-            if (AuthenticateUser()==false)
+            if (AuthenticateUser() == false)
             {
                 return Unauthorized();
             }
-            
+
 
             string conStr = configuration.GetSection("Data").GetSection("ConntectionString").Value;
             RTS.JobStation.Controller.Candidate candidate = new RTS.JobStation.Controller.Candidate();
 
 
-            DataTable dt = new DataTable();   
-            List< RTS.JobStation.Models.Religion> ReligionList = new List<RTS.JobStation.Models.Religion>();
-          
+            DataTable dt = new DataTable();
+            List<RTS.JobStation.Models.Religion> ReligionList = new List<RTS.JobStation.Models.Religion>();
+
             MySql.Data.MySqlClient.MySqlConnection con = RTS.JobStation.DatabaseCommands.OpenConnection();
             MySql.Data.MySqlClient.MySqlTransaction MyTran;
             MyTran = RTS.JobStation.DatabaseCommands.OpenTransaction(ref con);
@@ -86,7 +86,7 @@ namespace API.Controllers
                 ReligionList.Add(religionM);
             }
 
-          
+
 
             string json = JsonConvert.SerializeObject(ReligionList);
             //Deserialize the JSon value and assign it to datatable
@@ -136,8 +136,8 @@ namespace API.Controllers
 
             // Create their relation.
 
-    
-            DataRelation parentChildRelation = new DataRelation("ParentChild", parentTable.Columns["ParentId"], childTable.Columns["ParentId"],true );
+
+            DataRelation parentChildRelation = new DataRelation("ParentChild", parentTable.Columns["ParentId"], childTable.Columns["ParentId"], true);
             parentChildRelation.Nested = true;
             ds.Relations.Add(parentChildRelation);
             ds.DataSetName = "Candidate";
@@ -147,7 +147,7 @@ namespace API.Controllers
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
             //string json2 = JsonConvert.SerializeObject(doc.GetElementsByTagName("Parents"));
-           
+
             string json2 = JsonConvert.SerializeObject(doc);
 
 
@@ -193,6 +193,31 @@ namespace API.Controllers
 
             IDatabase db = redis.GetDatabase(2);
             return db.StringGet("shabeeraug2018").ToString();
+        }
+
+
+        // GET api/values/5
+        [HttpPost("testpost/{id}")]
+        public ActionResult<string> Gettestpost(int id)
+        {
+
+            return StatusCode(200,"Its done bro");
+        }
+
+        // GET api/values/5
+        [HttpPost("testpostBody")]
+        public ActionResult<string> GettestpostBody([FromBody] string uName)
+        {
+
+            return StatusCode(200, uName + " is amazing") ;
+        }
+
+        // GET api/values/5
+        [HttpPost("testget/{id}")]
+        public ActionResult<int> GetTestGet(int id)
+        {
+
+            return id;
         }
 
         // GET api/values/5

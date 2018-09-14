@@ -795,8 +795,12 @@ Namespace JobStation
             ' arrays. Let us assume that strings only contain ASCII codes.
             ' If strings include Unicode characters, use Unicode, UTF7, or UTF8
             ' encoding.
-            Dim initVectorBytes As Byte() = Encoding.ASCII.GetBytes(initVector)
-            Dim saltValueBytes As Byte() = Encoding.ASCII.GetBytes(saltValue)
+            'Dim initVectorBytes As Byte() = Encoding.ASCII.GetBytes(initVector)
+            'Dim saltValueBytes As Byte() = Encoding.ASCII.GetBytes(saltValue)
+
+            Dim initVectorBytes As Byte() = Encoding.UTF8.GetBytes(initVector)
+            Dim saltValueBytes As Byte() = Encoding.UTF8.GetBytes(saltValue)
+
 
             ' Convert our ciphertext into a byte array.
             Dim cipherTextBytes As Byte() = Convert.FromBase64String(cipherText)
